@@ -16,6 +16,9 @@ Interactive 3D model of the ear canal, tympanic membrane and middle ear for teac
   - generalised retraction
   - posterosuperior retraction pocket graded by Sadé (I–IV)
   - attic retraction pocket graded by Tos (I–IV, including scutum erosion)
+  - acute otitis media (bulging, red drum with pus filling the middle ear) and otitis media with effusion (amber fluid with a fluid level and air bubbles)
+  - attic cholesteatoma (keratin sac in the attic, scutum erosion) and congenital cholesteatoma (white mass behind an intact drum)
+  - tympanosclerosis, grommet (ventilation tube), otosclerosis with Schwartze’s sign, glomus tympanicum and glomus jugulare (pulsating, “rising sun”)
 
 Tap any structure for a short teaching note with clinical and audiology points.
 
