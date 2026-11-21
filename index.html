@@ -30,6 +30,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 390px;height:calc(100vh - 
 .lab{position:absolute;left:0;top:0;margin:-11px 0 0 -5px;pointer-events:auto;display:flex;align-items:center;gap:6px;font:500 13px/1 "IBM Plex Sans",sans-serif;color:#eef2f5;background:rgba(10,12,16,.72);border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:4px 8px 4px 5px;white-space:nowrap;cursor:pointer}
 .lab::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
 .lab.on{border-color:var(--hi);color:#fff}.lab.on::before{background:var(--hi)}
+.lab.sub{font-size:12px;padding:3px 7px 3px 4px;background:rgba(10,12,16,.6);color:#d6dde3}.lab.sub::before{width:6px;height:6px}.lab.sub.on{color:#fff}
 .lab.cond{background:rgba(120,30,30,.85);border-color:#ff9c8a}.lab.cond::before{background:#ff9c8a}
 .views{position:absolute;left:12px;top:12px;z-index:3;background:rgba(16,19,24,.85);border-color:rgba(255,255,255,.14)}
 .views button{color:#e8eaed}.views button[aria-pressed=true]{background:#e8eaed;color:#101318}
@@ -116,6 +117,7 @@ select{font:inherit;font-size:16px;width:100%;min-height:44px;padding:0 10px;bor
         <label class="tg"><input type="checkbox" id="t-canal" checked>Ear canal</label>
         <label class="tg"><input type="checkbox" id="t-cut" checked>Cut-away</label>
         <label class="tg"><input type="checkbox" id="t-oss" checked>Ossicles &amp; nerves</label>
+        <label class="tg"><input type="checkbox" id="t-ossd">Ossicle landmarks</label>
         <label class="tg"><input type="checkbox" id="t-walls" checked>Middle-ear cavity</label>
       </div>
       <div class="rng"><label for="r-op">Drum opacity</label><input type="range" id="r-op" min="0.15" max="1" step="0.01" value="0.8"><output id="o-op">80%</output></div>
@@ -136,7 +138,7 @@ const V3 = (x,y,z) => new THREE.Vector3(x,y,z);
 const ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 
 /* ---------------- teaching content ---------------- */
-const G1='Tympanic membrane',G2='Ear canal',G3='Middle ear';
+const G1='Tympanic membrane',G2='Ear canal',G3='Middle ear',G4='Ossicle landmarks';
 const INFO={
 tm_overview:{g:G1,t:'Tympanic membrane',b:['Roughly 9–10 mm tall and 8–9 mm wide (area about 85 mm²). It sits at about 45–55° to the canal floor and is pulled medially into a shallow cone by the handle of the malleus, with the umbo at its deepest point.','Healthy drums are pearly grey and translucent. Use the otoscope view, switch on “Drum regions” to see how it is divided for describing findings, and try the conditions above.']},
 pars_tensa:{g:G1,t:'Pars tensa',b:['The large, taut lower portion — most of the drum’s area. Its middle fibrous layer holds organised collagen fibres (outer radial, inner circular) that keep it tense and conical so it vibrates efficiently. It is anchored at its edge by the fibrocartilaginous annulus.','Clinical: perforations are described by quadrant, and as central (a rim of drum remains) or marginal (reaching the annulus). Tympanosclerosis plaques form here; healed perforations often leave thin “dimeric” segments without a fibrous layer, which retract easily.']},
@@ -177,7 +179,22 @@ chorda_tympani:{g:G3,t:'Chorda tympani',b:['A branch of the facial nerve carryin
 tensor_tympani:{g:G3,t:'Tensor tympani',b:['A muscle in a bony canal above the Eustachian tube. Its tendon turns laterally around the cochleariform process to insert on the neck and upper handle of the malleus. Supplied by the mandibular nerve (V3).','In humans it isn’t thought to contribute much to the clinically measured acoustic reflex, which is mainly stapedial.']},
 stapedius:{g:G3,t:'Stapedius',b:['Arises within the pyramidal eminence on the posterior wall; its tendon inserts on the neck of the stapes. Supplied by the facial nerve.','Clinical: its contraction is the acoustic reflex measured in immittance testing — absent with facial nerve lesions above the stapedius branch, stapes fixation, or a significant conductive loss in the probe ear.']},
 eustachian:{g:G3,t:'Eustachian tube',b:['Runs from the anterior wall of the middle ear (the protympanum) to the nasopharynx: about 35 mm in adults, the outer third bony and the inner two-thirds cartilaginous. It opens on swallowing and yawning to equalise pressure and drain the middle ear.','Clinical: in young children it is shorter, more horizontal and floppier — part of why otitis media with effusion is so common.']},
-aditus:{g:G3,t:'Aditus ad antrum',b:['The opening from the back of the attic into the mastoid antrum — the route by which middle-ear disease spreads to the mastoid air cells.']}
+aditus:{g:G3,t:'Aditus ad antrum',b:['The opening from the back of the attic into the mastoid antrum — the route by which middle-ear disease spreads to the mastoid air cells.']},
+malleus_head:{g:G4,t:'Head of malleus',b:['The rounded upper end of the malleus, sitting in the attic. Its back surface carries a saddle-shaped facet for the body of the incus (the incudomalleolar joint), and the superior malleal ligament tethers it to the tegmen.','Clinical: hidden behind the scutum on otoscopy. Attic cholesteatoma often wraps around the head and incus body, and bony fixation of the head in the anterior attic is a cause of conductive loss.']},
+malleus_neck:{g:G4,t:'Neck of malleus',b:['The narrowed part below the head. It lies just medial to the pars flaccida and forms the medial wall of Prussak’s space. The chorda tympani crosses medial to it, just above where the tensor tympani tendon inserts.','Clinical: an attic retraction pocket that reaches the neck is Tos grade II.']},
+anterior_process:{g:G4,t:'Anterior process of malleus',b:['A slender spur from the neck, pointing forward towards the petrotympanic fissure and held by the anterior malleal ligament. In adults it is often only a small stub.','The anterior malleal ligament and the posterior incudal ligament form the main axis about which the chain rocks.']},
+incus_body:{g:G4,t:'Body of incus',b:['The bulky part of the incus, in the attic behind the malleus head, joined to it at the incudomalleolar joint. The head of the malleus and body of the incus move largely as one unit at speech frequencies.','Clinical: in ossicular reconstruction the incus is often removed, reshaped and repositioned (incus interposition).']},
+incus_short:{g:G4,t:'Short process of incus',b:['Projects backwards into the fossa incudis at the entrance to the aditus, anchored by the posterior incudal ligament.','Clinical: a key surgical landmark in mastoidectomy — the facial nerve and lateral semicircular canal lie close by, and it guides the opening of the facial recess.']},
+incus_long:{g:G4,t:'Long process of incus',b:['Runs down behind and roughly parallel to the handle of the malleus, medial to the posterosuperior quadrant of the drum, and is often visible through it.','Clinical: its blood supply is tenuous, so it is the part of the chain most often eroded by chronic otitis media or a posterosuperior retraction pocket.']},
+lenticular:{g:G4,t:'Lenticular process',b:['A tiny knob at the tip of the long process of the incus, bent medially on a thin stalk. It forms the incudostapedial joint with the head of the stapes.','Clinical: the stalk is very thin and is often the first part lost when the long process erodes.']},
+stapes_head:{g:G4,t:'Head of stapes',b:['The small lateral end of the stapes, with a shallow cup for the lenticular process. The stapedius tendon attaches just below it, at the neck, on the posterior side.']},
+anterior_crus:{g:G4,t:'Anterior crus of stapes',b:['The front limb of the stapes arch — thinner and straighter than the posterior crus. The opening between the two crura (obturator foramen) is filled with a thin mucosal membrane.','Clinical: in stapes surgery the crura are divided to remove the superstructure.']},
+posterior_crus:{g:G4,t:'Posterior crus of stapes',b:['The back limb of the stapes arch — thicker and more curved than the anterior crus, on the side of the stapedius tendon and pyramidal eminence.']},
+footplate:{g:G4,t:'Footplate of stapes',b:['An oval plate, about 3 × 1.4 mm, sitting in the oval window and sealed by the annular ligament; the vestibule of the inner ear is directly medial. The drum is roughly 17–20 times its area, which gives the middle ear most of its pressure gain.','Clinical: otosclerosis fixes the footplate, usually starting at its front edge. A stapedotomy makes a small opening in it for a piston prosthesis.']},
+tt_tendon:{g:G4,t:'Tensor tympani tendon',b:['Leaves its bony canal, turns about 90° around the cochleariform process and crosses the middle ear laterally to insert on the medial side of the malleus neck and upper handle. Contraction pulls the handle medially and tenses the drum.']},
+cochleariform:{g:G4,t:'Cochleariform process',b:['A small hook of bone at the end of the tensor tympani canal on the medial wall, above and in front of the oval window. The tendon turns laterally around it like a pulley.','Clinical: a reliable surgical landmark — the tympanic facial nerve runs just above it, with the geniculate ganglion just in front.']},
+stapedius_tendon:{g:G4,t:'Stapedius tendon',b:['Emerges from the tip of the pyramidal eminence and runs forward to insert on the posterior neck of the stapes. Contraction tilts the stapes backwards, stiffening the chain.','Clinical: this contraction is the acoustic reflex measured in immittance testing. The tendon is cut in stapes surgery.']},
+pyramidal:{g:G4,t:'Pyramidal eminence',b:['A small hollow cone of bone on the posterior wall, beside the facial nerve, that houses the stapedius muscle.','Clinical: it divides the facial recess (lateral) from the sinus tympani (medial) — a hidden pocket where cholesteatoma can be left behind at surgery.']}
 };
 const TM_IDS=['tm_overview','pars_tensa','pars_flaccida','malleolar_folds','lateral_process','manubrium','umbo','cone_of_light','q_as','q_ai','q_ps','q_pi'];
 const ROMAN=['I','II','III','IV'];
@@ -218,9 +235,12 @@ layerGroup.visible=false;
 
 const pickables=[],objs={};
 function tag(m,id){m.userData.id=id;pickables.push(m);(objs[id]=objs[id]||[]).push(m);return m;}
+// a named sub-part of a structure: own material (so it highlights alone), picked as the part when ossicle landmarks are on
+function part(m,id){m.material=m.material.clone();m.userData.part=id;(objs[id]=objs[id]||[]).push(m);return m;}
 const cut=new THREE.Plane(V3(-1,0,0),0);
 const cavLocal=new THREE.Plane(V3(-0.7071,0,-0.7071),0.6),cavCut=new THREE.Plane();
-const state={ear:1,view:'overview',labels:true,regions:false,layers:false,canal:true,cut:true,oss:true,walls:true,sel:null,gap:1.1,cond:'normal',grade:2};
+const atticLocal=new THREE.Plane(V3(0,-0.6,-0.8),3.2),atticCut=new THREE.Plane(); // opens the lateral attic wall (scutum) so the malleus head shows
+const state={ear:1,view:'overview',labels:true,regions:false,layers:false,canal:true,cut:true,oss:true,ossd:false,walls:true,sel:null,gap:1.1,cond:'normal',grade:2};
 
 /* textures */
 function canvasTex(w,h,draw,srgb=true){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;}
@@ -403,30 +423,30 @@ const mInner=new THREE.Group();mInner.position.copy(malleusPivot).multiplyScalar
   mInner.add(tag(taper(hp,0.3,0.2,man,30),'manubrium'));
   mInner.add(tag(blob([U.x,U.y,surfZ(U.x,U.y)-0.24],0.27,[1.25,1,0.8],man),'manubrium'));
   mInner.add(tag(blob([LP.x,LP.y,surfZ(LP.x,LP.y)-0.36],0.4,[1,0.8,1],lpm),'lateral_process'));
-  mInner.add(tag(taper([[0.45,3.05,-0.3],[0.4,3.8,-0.9],[0.3,4.6,-1.6]],0.34,0.42,mm,20),'malleus'));
-  mInner.add(tag(taper([[0.4,3.9,-1.0],[1.1,4.05,-1.1],[1.8,4.1,-1.25]],0.16,0.07,mm,12),'malleus'));
-  const head=tag(blob([0.25,5.75,-2.1],1.1,[0.95,1.3,1.05],mm),'malleus');head.rotation.z=0.15;mInner.add(head);
+  mInner.add(part(tag(taper([[0.45,3.05,-0.3],[0.4,3.8,-0.9],[0.3,4.6,-1.6]],0.34,0.42,mm,20),'malleus'),'malleus_neck'));
+  mInner.add(part(tag(taper([[0.4,3.9,-1.0],[1.1,4.05,-1.1],[1.8,4.1,-1.25]],0.16,0.07,mm,12),'malleus'),'anterior_process'));
+  const head=part(tag(blob([0.25,5.75,-2.1],1.1,[0.95,1.3,1.05],mm),'malleus'),'malleus_head');head.rotation.z=0.15;mInner.add(head);
   const im=bone(0xe6d8ba);
-  const body=tag(blob([-1.2,5.6,-2.75],1.0,[0.85,1.2,1.15],im),'incus');body.rotation.z=-0.2;ossGroup.add(body);
-  ossGroup.add(tag(taper([[-1.6,5.8,-2.8],[-2.6,5.95,-2.85],[-3.6,6.0,-2.9]],0.55,0.14,im,16),'incus'));
-  ossGroup.add(tag(taper([[-1.3,5.0,-2.6],[-1.5,3.6,-2.3],[-1.7,2.3,-2.0],[-1.75,1.8,-1.9]],0.34,0.2,im,30),'incus'));
+  const body=part(tag(blob([-1.2,5.6,-2.75],1.0,[0.85,1.2,1.15],im),'incus'),'incus_body');body.rotation.z=-0.2;ossGroup.add(body);
+  ossGroup.add(part(tag(taper([[-1.6,5.8,-2.8],[-2.6,5.95,-2.85],[-3.6,6.0,-2.9]],0.55,0.14,im,16),'incus'),'incus_short'));
+  ossGroup.add(part(tag(taper([[-1.3,5.0,-2.6],[-1.5,3.6,-2.3],[-1.7,2.3,-2.0],[-1.75,1.8,-1.9]],0.34,0.2,im,30),'incus'),'incus_long'));
   const isj=bone(0xe6d8ba);
-  ossGroup.add(tag(tube([[-1.75,1.8,-1.9],[-1.78,1.55,-2.15],[-1.8,1.45,-2.4]],0.17,isj,12),'is_joint'));
+  ossGroup.add(part(tag(tube([[-1.75,1.8,-1.9],[-1.78,1.55,-2.15],[-1.8,1.45,-2.4]],0.17,isj,12),'is_joint'),'lenticular'));
   ossGroup.add(tag(blob([-1.8,1.45,-2.42],0.25,[1,1,0.8],isj),'is_joint'));
   const sm=bone(0xf0e6cc);const fpz=wallZ(-1.9,1.5)+0.12;
-  ossGroup.add(tag(blob([-1.82,1.45,-2.62],0.27,[1,1.1,0.8],sm),'stapes'));
-  ossGroup.add(tag(taper([[-1.84,1.46,-2.75],[-1.05,1.5,-3.5],[-0.72,1.5,fpz]],0.12,0.09,sm,20),'stapes'));
-  ossGroup.add(tag(taper([[-1.84,1.46,-2.75],[-2.65,1.5,-3.5],[-3.08,1.5,fpz]],0.12,0.09,sm,20),'stapes'));
+  ossGroup.add(part(tag(blob([-1.82,1.45,-2.62],0.27,[1,1.1,0.8],sm),'stapes'),'stapes_head'));
+  ossGroup.add(part(tag(taper([[-1.84,1.46,-2.75],[-1.05,1.5,-3.5],[-0.72,1.5,fpz]],0.12,0.09,sm,20),'stapes'),'anterior_crus'));
+  ossGroup.add(part(tag(taper([[-1.84,1.46,-2.75],[-2.65,1.5,-3.5],[-3.08,1.5,fpz]],0.12,0.09,sm,20),'stapes'),'posterior_crus'));
   const fpg=new THREE.CylinderGeometry(1,1,0.16,40);fpg.rotateX(Math.PI/2);fpg.scale(1.3,0.58,1);
-  const fp=tag(new THREE.Mesh(fpg,sm),'stapes');fp.position.set(-1.9,1.5,fpz);ossGroup.add(fp);
+  const fp=part(tag(new THREE.Mesh(fpg,sm),'stapes'),'footplate');fp.position.set(-1.9,1.5,fpz);ossGroup.add(fp);
   ossGroup.add(tag(tube([[-4.8,2.6,-1.5],[-3.2,3.1,-1.3],[-1.75,3.35,-1.25],[0.4,3.5,-1.05],[2.4,3.7,-1.2],[4.4,3.9,-1.6]],0.11,std(0xf2d45c,{roughness:0.4}),60),'chorda_tympani'));
   const cz=wallZ(1.4,2.55);
-  mInner.add(tag(tube([[1.4,2.55,cz+0.3],[0.9,3.0,-1.7],[0.42,3.35,-0.75]],0.12,std(0xf4f0e6),24),'tensor_tympani'));
+  mInner.add(part(tag(tube([[1.4,2.55,cz+0.3],[0.9,3.0,-1.7],[0.42,3.35,-0.75]],0.12,std(0xf4f0e6),24),'tensor_tympani'),'tt_tendon'));
   ossGroup.add(tag(taper([[1.4,2.6,cz+0.2],[4,3.2,-4.4],[6.5,3.4,-5.0]],0.3,0.55,std(0xb85a55,{roughness:0.5}),30),'tensor_tympani'));
-  ossGroup.add(tag(blob([1.4,2.55,cz+0.25],0.3,null,bone(0xe8dccb)),'tensor_tympani'));
+  ossGroup.add(part(tag(blob([1.4,2.55,cz+0.25],0.3,null,bone(0xe8dccb)),'tensor_tympani'),'cochleariform'));
   const pz=wallZ(-3.5,1.7);
-  const pe=tag(new THREE.Mesh(new THREE.ConeGeometry(0.5,1.2,20),bone(0xe8dccb)),'stapedius');pe.position.set(-3.6,1.65,pz+0.1);pe.rotation.z=-Math.PI/2;ossGroup.add(pe);
-  ossGroup.add(tag(tube([[-3.0,1.65,pz+0.2],[-2.5,1.55,-3.0],[-1.95,1.47,-2.75]],0.09,std(0xf4f0e6),16),'stapedius'));
+  const pe=part(tag(new THREE.Mesh(new THREE.ConeGeometry(0.5,1.2,20),bone(0xe8dccb)),'stapedius'),'pyramidal');pe.position.set(-3.6,1.65,pz+0.1);pe.rotation.z=-Math.PI/2;ossGroup.add(pe);
+  ossGroup.add(part(tag(tube([[-3.0,1.65,pz+0.2],[-2.5,1.55,-3.0],[-1.95,1.47,-2.75]],0.09,std(0xf4f0e6),16),'stapedius'),'stapedius_tendon'));
   const lig=std(0xf3e6da,{transparent:true,opacity:0.75,roughness:0.4});
   mInner.add(tag(taper([[0.25,7.0,-2.1],[0.3,7.4,-2.2],[0.35,7.75,-2.3]],0.14,0.28,lig,10),'ligaments'));
   mInner.add(tag(taper([[1.7,4.1,-1.25],[3.6,4.25,-1.4],[5.9,4.4,-1.6]],0.1,0.22,lig,16),'ligaments'));
@@ -472,8 +492,8 @@ const cavGeo=new THREE.BufferGeometry(),cavV=[],cavBase=[];
   const k=(NLAT/2|0)*(NLON+1)+(NLON/4|0),nx=cavGeo.attributes.normal.getX(k);if(nx*(pos[k*3]-CC.x)<0){const ix=cavGeo.index.array;for(let t=0;t<ix.length;t+=3){const s=ix[t+1];ix[t+1]=ix[t+2];ix[t+2]=s;}cavGeo.computeVertexNormals();}
   cavGeo.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(pos.length),3));
 }
-const mucMat=holeify(new THREE.MeshPhysicalMaterial({map:mucosaTex,vertexColors:true,roughness:0.42,clearcoat:0.55,clearcoatRoughness:0.22,side:THREE.BackSide,clippingPlanes:[cavCut]}));
-const boneOut=holeify(new THREE.MeshStandardMaterial({color:0xcfc2a6,roughness:0.85,bumpMap:boneBump,bumpScale:1.2,side:THREE.FrontSide,clippingPlanes:[cavCut]}));
+const mucMat=holeify(new THREE.MeshPhysicalMaterial({map:mucosaTex,vertexColors:true,roughness:0.42,clearcoat:0.55,clearcoatRoughness:0.22,side:THREE.BackSide,clippingPlanes:[cavCut,atticCut]}));
+const boneOut=holeify(new THREE.MeshStandardMaterial({color:0xcfc2a6,roughness:0.85,bumpMap:boneBump,bumpScale:1.2,side:THREE.FrontSide,clippingPlanes:[cavCut,atticCut]}));
 const cavIn=tag(new THREE.Mesh(cavGeo,mucMat),'cavity'),cavOut=tag(new THREE.Mesh(cavGeo,boneOut),'cavity');cavIn.userData.cav=cavOut.userData.cav=true;wallsGroup.add(cavIn,cavOut);
 const CAV_IDS=['promontory','round_window','oval_window','mesotympanum','epitympanum','hypotympanum'];
 function paintCav(){const a=cavGeo.attributes.color.array,hi=CAV_IDS.includes(state.sel)?state.sel:null;
@@ -573,6 +593,26 @@ const LABELS=[
   {id:'tensor_tympani',l:'Tensor tympani',f:'tm',p:V3(3.5,3.1,-4.1),v:'am',g:'oss'},
   {id:'stapedius',l:'Stapedius',f:'tm',p:V3(-3.6,1.2,-4.0),v:'m',g:'oss'},
   {id:'ligaments',l:'Malleal ligament',f:'tm',p:V3(3.8,4.3,-1.4),v:'m',g:'oss'},
+  // optional ossicle and tendon landmarks (Show → Ossicle landmarks)
+  {id:'malleus_head',l:'Head',f:'mal',p:V3(1.25,5.9,-1.6),v:'am',g:'ossd',cls:'sub'},
+  {id:'malleus_neck',l:'Neck',f:'mal',p:V3(0.75,4.3,-1.4),v:'am',g:'ossd',cls:'sub'},
+  {id:'anterior_process',l:'Anterior process',f:'mal',p:V3(1.8,4.1,-1.25),v:'am',g:'ossd',cls:'sub'},
+  {id:'lateral_process',l:'Lateral process',f:'mal',p:V3(LP.x+0.35,LP.y,surfZ(LP.x,LP.y)-0.36),v:'am',g:'ossd',cls:'sub'},
+  {id:'manubrium',l:'Handle',f:'mal',p:V3(0.55,1.0,surfZ(0.3,1.0)-0.24),v:'am',g:'ossd',cls:'sub'},
+  {id:'incus_body',l:'Body',f:'tm',p:V3(-1.5,6.3,-2.4),v:'am',g:'ossd',cls:'sub'},
+  {id:'incus_short',l:'Short process',f:'tm',p:V3(-3.4,6.0,-2.9),v:'am',g:'ossd',cls:'sub'},
+  {id:'incus_long',l:'Long process',f:'tm',p:V3(-1.65,3.2,-2.2),v:'am',g:'ossd',cls:'sub'},
+  {id:'lenticular',l:'Lenticular process',f:'tm',p:V3(-1.78,1.7,-2.0),v:'am',g:'ossd',cls:'sub'},
+  {id:'stapes_head',l:'Head',f:'tm',p:V3(-1.82,1.2,-2.65),v:'am',g:'ossd',cls:'sub'},
+  {id:'anterior_crus',l:'Anterior crus',f:'tm',p:V3(-1.0,1.5,-3.5),v:'am',g:'ossd',cls:'sub'},
+  {id:'posterior_crus',l:'Posterior crus',f:'tm',p:V3(-2.7,1.5,-3.5),v:'am',g:'ossd',cls:'sub'},
+  {id:'footplate',l:'Footplate',f:'tm',p:V3(-1.9,1.15,-3.95),v:'am',g:'ossd',cls:'sub'},
+  {id:'tt_tendon',l:'Tensor tympani tendon',f:'mal',p:V3(0.9,3.0,-1.7),v:'am',g:'ossd',cls:'sub'},
+  {id:'cochleariform',l:'Cochleariform process',f:'tm',p:V3(1.4,2.3,-3.9),v:'am',g:'ossd',cls:'sub'},
+  {id:'stapedius_tendon',l:'Stapedius tendon',f:'tm',p:V3(-2.5,1.55,-3.0),v:'am',g:'ossd',cls:'sub'},
+  {id:'pyramidal',l:'Pyramidal eminence',f:'tm',p:V3(-3.9,1.65,-3.8),v:'am',g:'ossd',cls:'sub'},
+  {id:'ligaments',l:'Superior malleal lig.',f:'mal',p:V3(0.35,7.6,-2.3),v:'am',g:'ossd',cls:'sub'},
+  {id:'ligaments',l:'Posterior incudal lig.',f:'tm',p:V3(-4.6,5.5,-3.1),v:'am',g:'ossd',cls:'sub'},
   {id:'promontory',l:'Promontory',f:'tm',p:V3(0.1,-0.7,wallZ(0.1,-0.7)+0.1),v:'a',g:'walls'},
   {id:'hypotympanum',l:'Jugular dome',f:'tm',p:V3(-1,-5.2,-2.8),v:'a',g:'walls'},
   {id:'facial_nerve',l:'Facial nerve',f:'tm',p:V3(-4.4,-0.5,-3.3),v:'m',g:'walls'},
@@ -589,19 +629,19 @@ const labelBox=$('#labels');
 for(const L of LABELS){const b=document.createElement('button');b.className='lab'+(L.cls?' '+L.cls:'');b.textContent=L.l;b.addEventListener('click',()=>L.id==='cond'?showInfo(state.cond):select(L.id));labelBox.appendChild(b);L.el=b;}
 
 /* ---------------- UI ---------------- */
-const groupVis={tm:()=>true,layers:()=>state.layers,oss:()=>state.oss,walls:()=>state.walls,canal:()=>state.canal,cond:()=>state.cond!=='normal',cone:()=>state.cond==='normal'};
+const groupVis={tm:()=>true,layers:()=>state.layers,oss:()=>state.oss,ossd:()=>state.oss&&state.ossd,walls:()=>state.walls,canal:()=>state.canal,cond:()=>state.cond!=='normal',cone:()=>state.cond==='normal'};
 function applyVis(){
   canalGroup.visible=state.canal;ossGroup.visible=state.oss;wallsGroup.visible=state.walls;
   layerGroup.visible=state.layers;tmMesh.visible=!state.layers;coneMesh.visible=!state.layers&&!state.regions&&state.view!=='medial'&&state.cond==='normal';
   foldMeshes.forEach(m=>m.visible=!state.layers&&!state.regions);
   const cp=state.cut?[cut]:[];canalMat.clippingPlanes=cp;canalGroup.children.forEach(o=>{if(o.material&&o!==canalMesh)o.material.clippingPlanes=cp;});
-  const cc=state.cut?[cavCut]:[];mucMat.clippingPlanes=cc;boneOut.clippingPlanes=cc;
+  const cc=state.cut?[cavCut,atticCut]:[];mucMat.clippingPlanes=cc;boneOut.clippingPlanes=cc;
   layerMeshes.epidermis.position.z=state.gap;layerMeshes.mucosa.position.z=-state.gap;
   $('#legend').hidden=!state.regions;
-  for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-walls'])$('#'+id).checked=state[id.slice(2)];
+  for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-ossd','t-walls'])$('#'+id).checked=state[id.slice(2)];
 }
 $('#legend').innerHTML=Object.keys(REGC).map(k=>`<div><i style="background:rgb(${REGC[k].map(v=>Math.round(v*255)).join(',')})"></i>${REGN[k]}</div>`).join('')+'<div><i style="background:#f2f2ec"></i>Malleus handle &amp; umbo</div>';
-for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-walls'])$('#'+id).addEventListener('change',e=>{state[id.slice(2)]=e.target.checked;if(id==='t-regions')paintTM();if(id==='t-layers'&&e.target.checked&&!state.sel)select('lamina_propria');applyVis();});
+for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-ossd','t-walls'])$('#'+id).addEventListener('change',e=>{state[id.slice(2)]=e.target.checked;if(id==='t-regions')paintTM();if(id==='t-layers'&&e.target.checked&&!state.sel)select('lamina_propria');applyVis();});
 $('#r-op').addEventListener('input',e=>{tmMat.opacity=+e.target.value;$('#o-op').textContent=Math.round(e.target.value*100)+'%';});
 $('#r-gap').addEventListener('input',e=>{state.gap=+e.target.value;$('#o-gap').textContent=state.gap.toFixed(1)+' mm';applyVis();});
 $('#cond').addEventListener('change',e=>{state.cond=e.target.value;const c=CONDS[state.cond];$('#gradeRow').hidden=!c.g;state.sel=null;clearHi();applyCondition();
@@ -626,6 +666,7 @@ function clearHi(){for(const k in objs)for(const m of objs[k])if(m.material&&m.m
 function select(id){
   state.sel=state.sel===id?null:id;
   if(['epidermis','lamina_propria','mucosa'].includes(state.sel)&&!state.layers){state.layers=true;applyVis();}
+  if(state.sel&&INFO[state.sel]&&INFO[state.sel].g===G4&&!(state.ossd&&state.oss)){state.ossd=state.oss=true;applyVis();}
   showInfo(state.sel||(state.cond!=='normal'?state.cond:'tm_overview'));
   clearHi();
   if(state.sel&&objs[state.sel])for(const m of objs[state.sel])if(m.material&&m.material.emissive){m.material.emissive.setHex(0x1aa6b4);m.material.emissiveIntensity=0.9;}
@@ -645,7 +686,8 @@ canvas.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e
     if(h.object.userData.hole||h.object.userData.cav){const p=tmGroup.worldToLocal(h.point.clone());if((h.object.userData.cav?cavHole(p.x,p.y,p.z):holeSD(p.x,p.y))<0)return false;}
     return true;});
   if(!hits.length)return;const h=hits[0];let id=h.object.userData.id;const p=tmGroup.worldToLocal(h.point.clone());
-  if(id==='tm')id=regionAt(p.x,p.y,!state.regions&&state.cond==='normal');
+  if(state.ossd&&h.object.userData.part)id=h.object.userData.part;
+  else if(id==='tm')id=regionAt(p.x,p.y,!state.regions&&state.cond==='normal');
   else if(id==='cavity')id=cavZone(p.x,p.y,p.z);
   else if(id==='canal'){const q=root.worldToLocal(h.point.clone()),v={x:q.x,y:q.y,z:q.z,blend:q.z<4.2};id=canalMatch(v,'anterior_recess')?'anterior_recess':canalMatch(v,'isthmus')?'isthmus':v.z>17?'cartilaginous':'bony';}
   select(id);
@@ -658,7 +700,7 @@ function layoutScope(){const w=stage.clientWidth,h=stage.clientHeight,R=Math.min
   scopeEl.querySelectorAll('[data-n]').forEach(t=>{const a=(+t.dataset.n)/12*Math.PI*2;t.style.left=cx+Math.sin(a)*(R+14)+'px';t.style.top=cy-Math.cos(a)*(R+14)+'px';});
   const ri=scopeEl.querySelector('[data-s=r]'),le=scopeEl.querySelector('[data-s=l]');ri.textContent=state.ear>0?'Anterior':'Posterior';le.textContent=state.ear>0?'Posterior':'Anterior';
   const off=Math.min(R+60,w/2-40);ri.style.left=cx+off+'px';le.style.left=cx-off+'px';ri.style.top=le.style.top=cy+30+'px';}
-function updateCuts(){root.updateMatrixWorld(true);cut.normal.set(-state.ear,0,0);cut.constant=0;cavCut.copy(cavLocal).applyMatrix4(tmGroup.matrixWorld);}
+function updateCuts(){root.updateMatrixWorld(true);cut.normal.set(-state.ear,0,0);cut.constant=0;cavCut.copy(cavLocal).applyMatrix4(tmGroup.matrixWorld);atticCut.copy(atticLocal).applyMatrix4(tmGroup.matrixWorld);}
 function setView(v){
   state.view=v;document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
   scopeEl.hidden=v!=='scope';
@@ -678,15 +720,21 @@ $('#ear').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
 // resize + loop
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();layoutScope();}
 const ro=new ResizeObserver(resize);ro.observe(stage);
-const tmp=new THREE.Vector3();
+const tmp=new THREE.Vector3(),FRAMES={tm:tmGroup,root,mal:mInner};
+const LABEL_ORDER=LABELS.filter(L=>L.cls!=='sub').concat(LABELS.filter(L=>L.cls==='sub'));
 function updateLabels(){
   const w=stage.clientWidth,h=stage.clientHeight,vk={overview:'a',scope:'o',medial:'m'}[state.view],R=Math.min(w,h)*0.43;
-  for(const L of LABELS){
+  const placed=[];
+  for(const L of LABEL_ORDER){
     if(!state.labels||!L.v.includes(vk)||!groupVis[L.g]()||(state.layers&&L.g==='tm')){L.el.style.display='none';continue;}
-    tmp.copy(L.p);if(L.lz)tmp.z+=layerMeshes[L.lz].position.z;(L.f==='tm'?tmGroup:root).localToWorld(tmp);tmp.project(camera);
+    tmp.copy(L.p);if(L.lz)tmp.z+=layerMeshes[L.lz].position.z;FRAMES[L.f].localToWorld(tmp);tmp.project(camera);
     const x=(tmp.x*0.5+0.5)*w,y=(-tmp.y*0.5+0.5)*h;
     if(tmp.z>1||x<-20||x>w+20||y<-20||y>h+20||(state.view==='scope'&&Math.hypot(x-w/2,y-h/2)>R)){L.el.style.display='none';continue;}
+    // landmark labels give way to any label already placed, so they declutter as you zoom out
+    if(L.cls==='sub'&&L.id!==state.sel&&L.w&&placed.some(r=>x-5<r[2]&&x-5+L.w>r[0]&&y-11<r[3]&&y-11+L.h>r[1])){L.el.style.display='none';continue;}
     L.el.style.display='';L.el.style.transform=`translate(${x}px,${y}px)`;
+    if(!L.w){L.w=L.el.offsetWidth;L.h=L.el.offsetHeight;}
+    placed.push([x-5,y-11,x-5+L.w,y-11+L.h]);
   }
 }
 updateCuts();applyCondition();paintCav();paintCanal();showInfo('tm_overview');setView('overview');resize();

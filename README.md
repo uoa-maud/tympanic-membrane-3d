@@ -9,7 +9,8 @@ Interactive 3D model of the ear canal, tympanic membrane and middle ear for teac
 - **Tympanic membrane:** pars tensa and pars flaccida, malleolar folds, lateral process, handle of malleus, umbo, cone of light, fibrocartilaginous annulus, notch of Rivinus. You can colour the quadrants and pars flaccida, and pull apart the three layers (epidermis, lamina propria with radial and circular fibres, mucosa).
 - **Ear canal:** cartilaginous part (with hairs and wax), bony part, isthmus, anterior recess.
 - **Middle ear:** mucosa-lined cavity with vessels, promontory, oval and round windows, jugular dome, aditus, Eustachian tube; malleus, incus and stapes, ligaments, chorda tympani, facial nerve, tensor tympani and stapedius.
-- **Views:** overview (cut away), otoscope (clock face, anterior/posterior markers), and looking at the drum from the middle ear. You can switch between right and left ears.
+- **Ossicle landmarks (optional):** switch on “Ossicle landmarks” to label the head, neck, anterior and lateral processes and handle of the malleus; the body, short, long and lenticular processes of the incus; the head, crura and footplate of the stapes; the tensor tympani and stapedius tendons, cochleariform process, pyramidal eminence and the superior malleal and posterior incudal ligaments. These smaller labels hide when they would overlap another label and come back as you zoom in.
+- **Views:** overview (cut away, including the lateral attic wall so the malleus head and incus body show), otoscope (clock face, anterior/posterior markers), and looking at the drum from the middle ear. You can switch between right and left ears.
 - **Conditions:**
   - small central, subtotal, marginal posterosuperior and attic perforations, each with an approximate % of the pars tensa missing
   - generalised retraction
