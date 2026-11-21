@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tympanic membrane 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: clinical, calm, precise — a teaching specimen, not a toy.
+   IDEA: an otology specimen bench — a dark viewing well with the specimen lit, notes card beside it.
+   PICTURE: the live 3D ear canal, drum and middle ear, filling the well; otoscope view with clock face.
+   COLOUR and TYPE: near-black well, tissue colours from the specimen, one teal highlight; IBM Plex Sans.
+   LAYOUT: well left, notes + controls right; stacks well → notes → controls → index under 900px. */
+:root{color-scheme:light dark;--bg:light-dark(#f3f2ef,#101318);--ink:light-dark(#15181c,#e8eaed);--mute:light-dark(#5b626b,#9aa3ad);--card:light-dark(#ffffff,#171b21);--line:light-dark(#dcdad5,#262c34);--well:#0a0c10;--hi:#2bc4d4;--hiInk:light-dark(#0b7480,#5fdbe8)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:14px max(2vw,14px)}
+h1{font-size:clamp(22px,2.6vw,32px);line-height:1.05;margin:0;font-weight:600;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--mute);font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{font:inherit;font-size:14px;border:0;background:none;color:var(--ink);padding:0 14px;min-height:44px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,.chip:focus-visible,.lab:focus-visible,select:focus-visible{outline:2px solid var(--hi);outline-offset:2px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 390px;height:calc(100vh - 86px);min-height:560px}
+.stage{position:relative;background:radial-gradient(ellipse at 50% 40%,#1b2028 0%,var(--well) 70%);overflow:hidden;border-radius:0 14px 14px 0}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lab{position:absolute;left:0;top:0;margin:-11px 0 0 -5px;pointer-events:auto;display:flex;align-items:center;gap:6px;font:500 13px/1 "IBM Plex Sans",sans-serif;color:#eef2f5;background:rgba(10,12,16,.72);border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:4px 8px 4px 5px;white-space:nowrap;cursor:pointer}
+.lab::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+.lab.on{border-color:var(--hi);color:#fff}.lab.on::before{background:var(--hi)}
+.lab.cond{background:rgba(120,30,30,.85);border-color:#ff9c8a}.lab.cond::before{background:#ff9c8a}
+.views{position:absolute;left:12px;top:12px;z-index:3;background:rgba(16,19,24,.85);border-color:rgba(255,255,255,.14)}
+.views button{color:#e8eaed}.views button[aria-pressed=true]{background:#e8eaed;color:#101318}
+.hint{position:absolute;left:14px;bottom:10px;margin:0;font-size:13px;color:#9aa3ad;z-index:3;pointer-events:none}
+#scope{position:absolute;inset:0;pointer-events:none;z-index:2}
+#scope .ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 200vmax #000,inset 0 0 40px 18px #000}
+#scope .t{position:absolute;font:600 13px/1 "IBM Plex Sans",sans-serif;color:#c9d0d6;transform:translate(-50%,-50%)}
+#scope .side{color:var(--hi);font-weight:500}
+.legend{position:absolute;right:12px;top:12px;z-index:3;background:rgba(16,19,24,.85);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;color:#e8eaed;font-size:13px;display:grid;gap:4px}
+.legend[hidden]{display:none}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+aside{overflow-y:auto;padding:16px max(2vw,14px) 28px;display:grid;gap:18px;align-content:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card h2{font-size:21px;line-height:1.15;margin:0 0 2px;font-weight:600}
+.grp{font-size:13px;color:var(--hiInk);margin:0 0 8px}
+.card p{margin:0 0 10px;font-size:15.5px}.card p:last-child{margin:0}
+.card .clin{border-top:1px solid var(--line);padding-top:10px}
+.card .grade{background:color-mix(in srgb,var(--hi) 14%,var(--card));border-radius:8px;padding:8px 10px}
+h3{font-size:14px;font-weight:600;margin:0 0 8px;color:var(--mute)}
+select{font:inherit;font-size:16px;width:100%;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.tg{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:20px;background:var(--card);font-size:14px;cursor:pointer;user-select:none}
+.tg input{accent-color:var(--hi);width:16px;height:16px;margin:0}
+.rng{display:grid;grid-template-columns:8.5em minmax(0,1fr) 3.4em;align-items:center;gap:10px;font-size:14px;margin-top:10px}
+.rng[hidden]{display:none}
+.rng input{accent-color:var(--hi);width:100%;height:28px}.rng output{text-align:right;color:var(--mute);white-space:nowrap}
+.idx{display:grid;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:14px;min-height:36px;padding:0 11px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.chip[aria-current=true]{border-color:var(--hi);background:color-mix(in srgb,var(--hi) 18%,var(--card))}
+.note{font-size:13px;color:var(--mute);margin:0}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr);height:auto}.stage{height:62vh;min-height:380px;border-radius:0}aside{overflow:visible}}
+@media(max-width:600px){header{padding:12px 14px}.views button{padding:0 10px;font-size:13px}.legend{top:auto;bottom:34px;font-size:12px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header>
+  <div>
+    <h1>The tympanic membrane in 3D</h1>
+    <p class="sub">Ear canal, eardrum and middle ear · adult, approximate scale in mm · tap any part</p>
+  </div>
+  <div class="seg" id="ear" role="group" aria-label="Which ear">
+    <button data-ear="1" aria-pressed="true">Right ear</button><button data-ear="-1" aria-pressed="false">Left ear</button>
+  </div>
+</header>
+<main>
+  <section class="stage" id="stage">
+    <canvas id="c" aria-label="3D model of the ear canal, tympanic membrane and middle ear"></canvas>
+    <div id="labels"></div>
+    <div id="scope" hidden></div>
+    <div class="seg views" id="views" role="group" aria-label="Viewpoint">
+      <button data-v="overview" aria-pressed="true">Overview</button><button data-v="scope" aria-pressed="false">Otoscope</button><button data-v="medial" aria-pressed="false">From middle ear</button>
+    </div>
+    <div class="legend" id="legend" hidden></div>
+    <p class="hint">Drag to rotate · pinch or scroll to zoom</p>
+  </section>
+  <aside>
+    <div>
+      <h3><label for="cond">Condition</label></h3>
+      <select id="cond">
+        <option value="normal">Normal drum</option>
+        <optgroup label="Perforations">
+          <option value="perf_small">Small central perforation</option>
+          <option value="perf_kidney">Large central (subtotal) perforation</option>
+          <option value="perf_marginal">Marginal posterosuperior perforation</option>
+          <option value="perf_attic">Attic (pars flaccida) perforation</option>
+        </optgroup>
+        <optgroup label="Retraction">
+          <option value="ret_general">Generalised retraction</option>
+          <option value="ret_ps">Posterosuperior retraction pocket (Sadé)</option>
+          <option value="ret_attic">Attic retraction pocket (Tos)</option>
+        </optgroup>
+      </select>
+      <div class="rng" id="gradeRow" hidden><label for="r-grade">Grade</label><input type="range" id="r-grade" min="1" max="4" step="1" value="2"><output id="o-grade">II</output></div>
+    </div>
+    <div class="card" id="info" aria-live="polite"></div>
+    <div>
+      <h3>Show</h3>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="t-labels" checked>Labels</label>
+        <label class="tg"><input type="checkbox" id="t-regions">Drum regions</label>
+        <label class="tg"><input type="checkbox" id="t-layers">Drum layers</label>
+        <label class="tg"><input type="checkbox" id="t-canal" checked>Ear canal</label>
+        <label class="tg"><input type="checkbox" id="t-cut" checked>Cut-away</label>
+        <label class="tg"><input type="checkbox" id="t-oss" checked>Ossicles &amp; nerves</label>
+        <label class="tg"><input type="checkbox" id="t-walls" checked>Middle-ear cavity</label>
+      </div>
+      <div class="rng"><label for="r-op">Drum opacity</label><input type="range" id="r-op" min="0.15" max="1" step="0.01" value="0.8"><output id="o-op">80%</output></div>
+      <div class="rng"><label for="r-gap">Layer spacing</label><input type="range" id="r-gap" min="0" max="2" step="0.05" value="1.1"><output id="o-gap">1.1 mm</output></div>
+      <p class="note" style="margin-top:6px">The real drum is roughly 0.05–0.1 mm thick; layer spacing is exaggerated to show structure.</p>
+    </div>
+    <div class="idx" id="idx"></div>
+    <p class="note">Geometry is a hand-built teaching approximation from standard anatomical descriptions, not a scan. Colours are idealised.</p>
+  </aside>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+{
+const $ = s => document.querySelector(s);
+const V3 = (x,y,z) => new THREE.Vector3(x,y,z);
+const ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+
+/* ---------------- teaching content ---------------- */
+const G1='Tympanic membrane',G2='Ear canal',G3='Middle ear';
+const INFO={
+tm_overview:{g:G1,t:'Tympanic membrane',b:['Roughly 9–10 mm tall and 8–9 mm wide (area about 85 mm²). It sits at about 45–55° to the canal floor and is pulled medially into a shallow cone by the handle of the malleus, with the umbo at its deepest point.','Healthy drums are pearly grey and translucent. Use the otoscope view, switch on “Drum regions” to see how it is divided for describing findings, and try the conditions above.']},
+pars_tensa:{g:G1,t:'Pars tensa',b:['The large, taut lower portion — most of the drum’s area. Its middle fibrous layer holds organised collagen fibres (outer radial, inner circular) that keep it tense and conical so it vibrates efficiently. It is anchored at its edge by the fibrocartilaginous annulus.','Clinical: perforations are described by quadrant, and as central (a rim of drum remains) or marginal (reaching the annulus). Tympanosclerosis plaques form here; healed perforations often leave thin “dimeric” segments without a fibrous layer, which retract easily.']},
+pars_flaccida:{g:G1,t:'Pars flaccida (Shrapnell’s membrane)',b:['Small, roughly triangular area above the anterior and posterior malleolar folds. There is no annulus here — it attaches straight to bone at the notch of Rivinus — and its fibrous layer is thin and loosely arranged, so it is floppy and moves readily with pressure change. Prussak’s space lies just medial to it.','Clinical: with sustained negative middle-ear pressure it is the usual site of attic retraction pockets and primary acquired (attic) cholesteatoma. A drum check isn’t complete until you have looked above the lateral process.']},
+malleolar_folds:{g:G1,t:'Malleolar folds',b:['The anterior and posterior malleolar folds run from the lateral process of the malleus to the anterior and posterior tympanic spines at either end of the notch of Rivinus. They are the boundary between pars tensa (below) and pars flaccida (above).','On the medial side, mucosal folds here form the anterior and posterior pouches (of von Tröltsch) and help bound Prussak’s space.']},
+lateral_process:{g:G1,t:'Lateral (short) process of malleus',b:['A small knob bulging laterally at the top of the handle — usually the most prominent, chalk-white landmark and the first thing to find when orienting yourself. It sits where the pars tensa meets the pars flaccida.','Clinical: it looks more prominent when the drum is retracted, as the handle is pulled medially and appears foreshortened.']},
+manubrium:{g:G1,t:'Handle of malleus (manubrium)',b:['Embedded in the fibrous layer of the drum, running from the lateral process down to the umbo. It angles downward and backward, so its lower end points posteriorly — a quick way to tell left from right.','Clinical: retraction tilts it more horizontally and makes it look shorter. Redness along the handle and around the periphery is a common early sign of acute otitis media.']},
+umbo:{g:G1,t:'Umbo',b:['The tip of the malleus handle and the deepest point of the drum’s cone, roughly 2 mm medial to the plane of the annulus. It sits close to the centre of the pars tensa and is the apex of the light reflex.','It is the reference point for dividing the pars tensa into quadrants: one line along the handle, one at right angles to it through the umbo.']},
+cone_of_light:{g:G1,t:'Cone of light (light reflex)',b:['A reflection of the otoscope light from the part of the drum that faces your line of sight. Because of the drum’s tilt and cone shape it falls anteroinferiorly: about 5 o’clock in a right ear, 7 o’clock in a left.','Clinical: a dull, distorted or absent reflex suggests a change in drum position or surface (retraction, bulging, effusion, thickening, scarring) but isn’t diagnostic on its own. Here it is drawn as a fixed overlay; a real reflex shifts as the viewing angle changes.']},
+q_as:{g:G1,t:'Anterosuperior quadrant',b:['In front of the handle, above the line through the umbo. Its upper edge meets the anterior malleolar fold, and it is often partly hidden by the bulge of the anterior canal wall.','Medially lies the anterior middle ear, near the tensor tympani canal and the opening of the Eustachian tube.']},
+q_ai:{g:G1,t:'Anteroinferior quadrant',b:['Where the light reflex normally sits. Its edge meets the anterior canal wall at an acute angle, forming the anterior recess.','Clinical: the usual site for myringotomy and ventilation tube (grommet) insertion — away from the ossicular chain and the round window.']},
+q_ps:{g:G1,t:'Posterosuperior quadrant',b:['The busiest area behind the drum: the long process of the incus, incudostapedial joint, stapes, stapedius tendon and chorda tympani lie medial to it. In a thin drum you can often see the long process of the incus through it.','Clinical: posterosuperior retraction pockets can erode the long process of the incus, and marginal perforations here carry a cholesteatoma risk. Avoid instrumenting this quadrant.']},
+q_pi:{g:G1,t:'Posteroinferior quadrant',b:['The round window niche lies medial to it, behind and below the promontory. The promontory can show as a pink blush through the drum behind the umbo.','Clinical: fluid levels and bubbles in effusion are often easiest to see in the lower quadrants. A blue or red mass behind the inferior drum may be a high jugular bulb or a glomus tumour.']},
+annulus:{g:G1,t:'Fibrocartilaginous annulus',b:['A thickened ring at the edge of the pars tensa that seats the drum in the tympanic sulcus of the bony canal. It is missing superiorly at the notch of Rivinus.','Clinical: a perforation that reaches the annulus is marginal. Canal skin can migrate into the middle ear around it, so marginal perforations carry a higher cholesteatoma risk than central ones.']},
+notch_rivinus:{g:G1,t:'Notch of Rivinus',b:['The gap at the top of the tympanic ring, between the anterior and posterior tympanic spines. There is no annulus here; the pars flaccida attaches directly to the squamous temporal bone.','The bone just above it is the scutum, the lateral wall of the attic — erosion of the scutum is a sign of attic cholesteatoma.']},
+epidermis:{g:G1,t:'Outer (epidermal) layer',b:['A thin stratified squamous epithelium continuous with the canal skin. Its keratin migrates outward from around the umbo, across the drum and along the canal — the ear’s self-cleaning mechanism.','Clinical: this migration is why skin can be carried into the middle ear through a marginal perforation or deep retraction pocket.']},
+lamina_propria:{g:G1,t:'Middle fibrous layer (lamina propria)',b:['In the pars tensa: an outer layer of radial collagen fibres and an inner layer of circular fibres (densest near the edge), plus parabolic and transverse fibres near the handle. Together they give the drum its stiffness and cone shape. In the pars flaccida the fibres are sparse and loosely arranged (scattered strands here).','Clinical: tympanosclerosis deposits form in this layer, and healed perforations often lack it.']},
+mucosa:{g:G1,t:'Inner (mucosal) layer',b:['A simple, low cuboidal epithelium continuous with the lining of the middle ear. It faces the middle-ear space and becomes inflamed along with the rest of the lining in otitis media.']},
+ear_canal:{g:G2,t:'External ear canal',b:['About 25 mm long in adults (the anteroinferior wall is several mm longer than the posterosuperior because of the drum’s tilt) and roughly 7 mm across. It is gently S-shaped: outer third cartilaginous, inner two-thirds bony. The curve here is softened, as if the pinna were already pulled for viewing.']},
+cartilaginous:{g:G2,t:'Cartilaginous canal (outer third)',b:['Skin over elastic cartilage, continuous with the pinna. The only part with hairs, sebaceous and ceruminous glands — so wax is made here, and furuncles occur only here.','Clinical: it is mobile. In adults, pulling the pinna up and back straightens the canal; in infants, pull down and back.']},
+bony:{g:G2,t:'Bony canal (inner two-thirds)',b:['Lies in the tympanic part of the temporal bone. The skin is very thin, has no hairs or glands, and sits directly on periosteum.','Clinical: easily traumatised and very sensitive — go gently with speculum and instruments. Its nerve supply includes the auriculotemporal nerve (V3) and the auricular branch of the vagus (Arnold’s nerve), which is why touching it can trigger a cough.']},
+isthmus:{g:G2,t:'Isthmus',b:['The narrowest point of the canal, just medial to the bony–cartilaginous junction. It limits speculum size, and wax or foreign bodies pushed past it are much harder to remove.']},
+anterior_recess:{g:G2,t:'Anterior recess',b:['Where the drum meets the anterior and inferior canal walls at an acute angle, because the drum is tilted. Debris collects here and it is easy to miss on otoscopy; a prominent anterior canal wall can hide it completely.']},
+epitympanum:{g:G3,t:'Epitympanum (attic)',b:['The part of the middle ear above the level of the drum, holding the malleus head and incus body. Its roof is the tegmen tympani, thin bone separating it from the middle cranial fossa; its lateral wall is the scutum. It leads back through the aditus to the mastoid antrum.']},
+mesotympanum:{g:G3,t:'Mesotympanum',b:['The part of the middle ear directly medial to the pars tensa. The gap is narrowest at the umbo — only about 2 mm to the promontory — and wider above and below.','The whole cavity is lined with a thin, moist mucosa carrying fine vessels; in health it is pale pink and air-filled.']},
+hypotympanum:{g:G3,t:'Hypotympanum',b:['The part of the middle ear below the level of the drum. Its floor is thin bone over the jugular bulb (the blue dome here) and is often honeycombed with small air cells.','Clinical: a high or dehiscent jugular bulb can show as a blue mass behind the inferior drum — don’t instrument it.']},
+prussak:{g:G3,t:'Prussak’s space',b:['A small space between the pars flaccida laterally and the neck of the malleus medially, with the lateral process below. It is where attic retraction pockets and cholesteatoma usually begin.']},
+malleus:{g:G3,t:'Malleus',b:['The largest ossicle. Its head and neck sit in the attic and join the incus body at the incudomalleolar joint; its handle is fixed in the drum. Suspended by the superior and anterior malleal ligaments, with the tensor tympani tendon inserting on the neck and upper handle.']},
+incus:{g:G3,t:'Incus',b:['Its body sits in the attic with the malleus head; the short process points back towards the aditus, tethered by the posterior incudal ligament. The long process runs down behind and parallel to the malleus handle and ends in the lenticular process, which joins the stapes head.','Clinical: the long process has a fragile blood supply and is the part of the chain most often eroded by chronic otitis media and retraction.']},
+ligaments:{g:G3,t:'Ossicular ligaments',b:['The chain hangs from fine mucosa-covered ligaments: the superior malleal ligament to the tegmen, the anterior malleal ligament forward towards the petrotympanic fissure, and the posterior incudal ligament into the fossa incudis. Together with the two muscle tendons they set the chain’s axis of rotation.']},
+is_joint:{g:G3,t:'Incudostapedial joint',b:['The lenticular process of the incus meeting the stapes head, just medial to the posterosuperior quadrant. It is often visible through a thin drum.','Clinical: if it erodes, the chain breaks — with an intact drum this can give a conductive loss of up to about 60 dB and a hypercompliant (Ad) tympanogram.']},
+stapes:{g:G3,t:'Stapes',b:['The smallest bone in the body: head, anterior and posterior crura, and a footplate held in the oval window by the annular ligament. The stapedius tendon attaches to its neck.','Clinical: in otosclerosis the footplate becomes fixed — typically a conductive loss with a Carhart notch and absent acoustic reflexes, with a normal or shallow (As) tympanogram.']},
+oval_window:{g:G3,t:'Oval window',b:['Opens into the vestibule and is closed by the stapes footplate and annular ligament. It lies in a niche posterosuperior to the promontory, just below the facial nerve.']},
+round_window:{g:G3,t:'Round window',b:['In a niche posteroinferior to the promontory, closed by the round window membrane (secondary tympanic membrane). It lets cochlear fluid move as the stapes pushes in and out. The overhang of the niche usually hides the membrane itself.']},
+promontory:{g:G3,t:'Promontory',b:['The bulge on the medial wall formed by the basal turn of the cochlea, covered by the tympanic plexus (Jacobson’s nerve) — the fine vessels and nerve twigs on its surface.','Clinical: its pink can show through a thin drum behind the umbo; a red flush on it in active otosclerosis is Schwartze’s sign.']},
+facial_nerve:{g:G3,t:'Facial nerve',b:['Its tympanic segment runs in a bony canal along the medial wall just above the oval window, then turns down behind the middle ear as the mastoid segment, giving off the stapedius nerve and chorda tympani.','Clinical: the bone over the tympanic segment is often thin or dehiscent — a surgical hazard.']},
+chorda_tympani:{g:G3,t:'Chorda tympani',b:['A branch of the facial nerve carrying taste from the front two-thirds of the tongue (and secretomotor fibres to the submandibular and sublingual glands). It enters from the posterior wall, crosses the upper middle ear between the malleus handle and the long process of the incus, and leaves anteriorly through the petrotympanic fissure.','Clinical: sometimes visible through the posterosuperior drum; at risk in middle-ear surgery, causing altered taste.']},
+tensor_tympani:{g:G3,t:'Tensor tympani',b:['A muscle in a bony canal above the Eustachian tube. Its tendon turns laterally around the cochleariform process to insert on the neck and upper handle of the malleus. Supplied by the mandibular nerve (V3).','In humans it isn’t thought to contribute much to the clinically measured acoustic reflex, which is mainly stapedial.']},
+stapedius:{g:G3,t:'Stapedius',b:['Arises within the pyramidal eminence on the posterior wall; its tendon inserts on the neck of the stapes. Supplied by the facial nerve.','Clinical: its contraction is the acoustic reflex measured in immittance testing — absent with facial nerve lesions above the stapedius branch, stapes fixation, or a significant conductive loss in the probe ear.']},
+eustachian:{g:G3,t:'Eustachian tube',b:['Runs from the anterior wall of the middle ear (the protympanum) to the nasopharynx: about 35 mm in adults, the outer third bony and the inner two-thirds cartilaginous. It opens on swallowing and yawning to equalise pressure and drain the middle ear.','Clinical: in young children it is shorter, more horizontal and floppier — part of why otitis media with effusion is so common.']},
+aditus:{g:G3,t:'Aditus ad antrum',b:['The opening from the back of the attic into the mastoid antrum — the route by which middle-ear disease spreads to the mastoid air cells.']}
+};
+const TM_IDS=['tm_overview','pars_tensa','pars_flaccida','malleolar_folds','lateral_process','manubrium','umbo','cone_of_light','q_as','q_ai','q_ps','q_pi'];
+const ROMAN=['I','II','III','IV'];
+const CONDS={
+normal:{t:'Normal drum',lab:'',b:[]},
+perf_small:{t:'Small central perforation',lab:'Perforation',at:[1.45,-2.0],b:['A rim of drum remains all the way round, so it is central. This one sits in the anteroinferior quadrant, away from the ossicles; its edge has healed into a smooth, whitish margin.','Audiology: conductive loss grows with perforation size and is usually greatest in the low frequencies; site matters less than traditionally taught. Tympanometry is flat (type B) with a larger-than-expected canal volume, because the probe measures the middle-ear space too.','Clinical: typical of mucosal (“safe”) chronic otitis media or an unhealed traumatic or grommet perforation. Keep water out; ENT for repair if it persists or keeps discharging.']},
+perf_kidney:{t:'Large central (subtotal) perforation',lab:'Perforation',at:[-1.7,-1.4],b:['Most of the pars tensa is gone but a rim remains and the handle of the malleus still crosses the gap — the classic kidney-shaped perforation. You can see straight into the middle ear: the promontory, round window niche and, above, the incudostapedial joint.','Audiology: a larger conductive loss than a small perforation, mostly low frequency. Type B tympanogram with a large canal volume.','Clinical: usually mucosal chronic otitis media. Check for discharge and ossicular integrity; ENT referral for myringoplasty.']},
+perf_marginal:{t:'Marginal posterosuperior perforation',lab:'Perforation',at:[-2.6,2.3],b:['The perforation reaches the edge: there is no rim of drum and the annulus is destroyed at that point. The long process of the incus and the stapes lie directly behind it.','Audiology: conductive loss, larger if the incus long process or stapes superstructure has eroded. Type B with a large volume.','Clinical: a marginal perforation lets canal skin migrate into the middle ear, so it is “unsafe” (squamous) disease until proven otherwise — look for white keratin, foul discharge or granulations, and refer to ENT.']},
+perf_attic:{t:'Attic (pars flaccida) perforation',lab:'Attic defect',at:[0.0,4.05],b:['A small defect in the pars flaccida above the lateral process. The pars tensa below may look entirely normal.','Audiology: hearing and tympanometry can be near normal early on, because the pars tensa and chain are intact — so normal immittance doesn’t rule it out.','Clinical: an apparent attic “perforation” is often the mouth of a deep retraction pocket or cholesteatoma sac. Treat it as cholesteatoma until proven otherwise and refer to ENT.']},
+ret_general:{t:'Generalised retraction',lab:'Retracted drum',at:[-1.6,-1.6],b:['The whole pars tensa is drawn medially by negative middle-ear pressure. The handle of the malleus swings medially and looks shorter and more horizontal, the lateral process stands out, the malleolar folds sharpen and the light reflex is distorted or lost (hidden here).','Audiology: tympanogram with a peak at negative pressure (type C); hearing often near normal unless fluid follows.','Clinical: Eustachian tube dysfunction — common after colds and in children. Watch for progression to effusion or a localised pocket.']},
+ret_ps:{t:'Posterosuperior retraction pocket',lab:'Retraction pocket',at:[-1.8,1.6],scale:'Sadé',g:['Grade I — slight retraction, not touching the incus.','Grade II — retracted onto the incus or stapes (the outline of the long process shows through).','Grade III — touching the promontory but not stuck to it (middle-ear atelectasis); it may still lift with Valsalva or pneumatic otoscopy.','Grade IV — adherent to the promontory (adhesive otitis media).'],b:['A localised, thin segment of pars tensa sucked into the posterosuperior middle ear. Rotate in the Overview to see how deep it goes and what it drapes over.','Audiology: often type C or B tympanogram; hearing may be surprisingly good while the pocket conducts sound onto the stapes, then worsens if the incus erodes.','Clinical: monitor depth, whether you can see the whole pocket and whether it stays self-cleaning. Keratin collecting in it, erosion or an unseen fundus → ENT.']},
+ret_attic:{t:'Attic retraction pocket',lab:'Attic pocket',at:[0.0,4.1],scale:'Tos',g:['Grade I — pars flaccida retracted, not touching the malleus neck.','Grade II — retracted onto the neck of the malleus.','Grade III — limited erosion of the outer attic wall (scutum); the pocket extends into the attic.','Grade IV — severe scutum erosion; the bottom of the pocket can no longer be seen. Keratin collects here.'],b:['The pars flaccida is drawn into Prussak’s space and the attic. At higher grades the bony scutum above it is eroded (the canal rim notches upward here).','Audiology: the pars tensa may be normal, so hearing and tympanometry can look fine — don’t let a normal tympanogram reassure you.','Clinical: grades III–IV, keratin debris or an unseen fundus suggest cholesteatoma — refer to ENT.']}
+};
+
+/* ---------------- renderer, scene ---------------- */
+const stage=$('#stage'),canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.localClippingEnabled=true;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.05,500);
+scene.add(camera);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=0.08;
+const hemi=new THREE.HemisphereLight(0xfff3ea,0x3a2828,1.0);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.6);key.position.set(25,30,40);scene.add(key);
+const fill=new THREE.DirectionalLight(0xffe2d4,0.5);fill.position.set(-30,-12,-25);scene.add(fill);
+const scopeLight=new THREE.PointLight(0xfff4e6,0,0,0);camera.add(scopeLight);
+
+const root=new THREE.Group();scene.add(root);
+const tmGroup=new THREE.Group();root.add(tmGroup);
+tmGroup.rotation.order='YXZ';tmGroup.rotation.set(0.6,0.35,0);tmGroup.updateMatrix();
+const meLight=new THREE.PointLight(0xffe8de,0.9,0,0);meLight.position.set(1,1,-1.2);tmGroup.add(meLight);
+const membrane=new THREE.Group(),layerGroup=new THREE.Group(),ossGroup=new THREE.Group(),wallsGroup=new THREE.Group(),canalGroup=new THREE.Group(),patho=new THREE.Group();
+tmGroup.add(membrane,layerGroup,ossGroup,wallsGroup,patho);root.add(canalGroup);
+layerGroup.visible=false;
+
+const pickables=[],objs={};
+function tag(m,id){m.userData.id=id;pickables.push(m);(objs[id]=objs[id]||[]).push(m);return m;}
+const cut=new THREE.Plane(V3(-1,0,0),0);
+const cavLocal=new THREE.Plane(V3(-0.7071,0,-0.7071),0.6),cavCut=new THREE.Plane();
+const state={ear:1,view:'overview',labels:true,regions:false,layers:false,canal:true,cut:true,oss:true,walls:true,sel:null,gap:1.1,cond:'normal',grade:2};
+
+/* textures */
+function canvasTex(w,h,draw,srgb=true){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;}
+const boneBump=canvasTex(256,256,(g,w,h)=>{const s=document.createElement('canvas');s.width=s.height=48;const sg=s.getContext('2d'),im=sg.createImageData(48,48);for(let i=0;i<48*48;i++){const v=100+Math.random()*110;im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}sg.putImageData(im,0,0);g.imageSmoothingEnabled=true;g.drawImage(s,0,0,w,h);},false);
+const mucosaTex=canvasTex(1024,512,(g,w,h)=>{
+  g.fillStyle='rgb(236,176,166)';g.fillRect(0,0,w,h);
+  for(let i=0;i<420;i++){const x=Math.random()*w,y=Math.random()*h,r=12+Math.random()*50,gr=g.createRadialGradient(x,y,0,x,y,r),c=Math.random()<0.5?'255,226,214':'214,120,116';gr.addColorStop(0,`rgba(${c},0.16)`);gr.addColorStop(1,`rgba(${c},0)`);g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r);}
+  const vessel=(x,y,a,len,wd)=>{g.lineCap='round';g.strokeStyle=`rgba(${165+Math.random()*30|0},${45+Math.random()*25|0},55,${0.16+wd*0.07})`;g.lineWidth=wd;g.beginPath();g.moveTo(x,y);
+    for(let i=0;i<len;i++){a+=(Math.random()-0.5)*0.45;x+=Math.cos(a)*3.2;y+=Math.sin(a)*3.2;g.lineTo(x,y);
+      if(wd>0.7&&Math.random()<0.05){g.stroke();vessel(x,y,a+(Math.random()<0.5?-1:1)*(0.5+Math.random()*0.7),len*0.55|0,wd*0.68);g.lineWidth=wd;g.beginPath();g.moveTo(x,y);}}g.stroke();};
+  for(let i=0;i<70;i++)vessel(Math.random()*w,Math.random()*h,Math.random()*6.3,40+Math.random()*60,0.9+Math.random()*1.1);
+  for(let i=0;i<45;i++)vessel(w*0.5+(Math.random()-0.5)*220,h*0.55+(Math.random()-0.5)*160,Math.random()*6.3,30+Math.random()*40,0.7+Math.random()*0.9);
+});
+
+/* hole (perforation) shader patch */
+function holeify(mat){
+  mat.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float hole;\nvarying float vHole;').replace('#include <begin_vertex>','#include <begin_vertex>\nvHole=hole;');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vHole;').replace('#include <dithering_fragment>','#include <dithering_fragment>\nif(vHole<0.0)discard;\nif(vHole<0.16)gl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.95,0.92,0.88),0.65*(1.0-vHole/0.16));');
+  };
+  mat.customProgramCacheKey=()=>'hole';return mat;
+}
+function setHole(geo,fn){const p=geo.attributes.position,a=new Float32Array(p.count);for(let k=0;k<p.count;k++)a[k]=fn(p.getX(k),p.getY(k),p.getZ(k));geo.setAttribute('hole',new THREE.BufferAttribute(a,1));}
+
+/* ---------------- tympanic membrane geometry (TM frame: +x anterior, +y superior, +z lateral) ---------------- */
+const A=4.1,B=4.6,D=2.0;
+const U={x:0.15,y:-0.35},LP={x:0.45,y:3.0};
+const NA=55*Math.PI/180,NP=125*Math.PI/180;
+const SA={x:A*Math.cos(NA),y:B*Math.sin(NA)},SP={x:A*Math.cos(NP),y:B*Math.sin(NP)};
+const HL=Math.hypot(LP.x-U.x,LP.y-U.y),H={x:(LP.x-U.x)/HL,y:(LP.y-U.y)/HL};
+const CL=-50*Math.PI/180;
+function rayLen(dx,dy){const a=dx*dx/(A*A)+dy*dy/(B*B),b=2*(U.x*dx/(A*A)+U.y*dy/(B*B)),c=U.x*U.x/(A*A)+U.y*U.y/(B*B)-1;return(-b+Math.sqrt(b*b-4*a*c))/(2*a);}
+function segDist(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay;let t=((px-ax)*vx+(py-ay)*vy)/(vx*vx+vy*vy);t=Math.max(0,Math.min(1,t));return Math.hypot(px-ax-t*vx,py-ay-t*vy);}
+function foldY(x){if(x<LP.x)return SP.y+(LP.y-SP.y)*(x-SP.x)/(LP.x-SP.x);return LP.y+(SA.y-LP.y)*(x-LP.x)/(SA.x-LP.x);}
+function isFlac(x,y){return x>SP.x&&x<SA.x&&y>foldY(x);}
+function sOf(x,y){const dx=x-U.x,dy=y-U.y,d=Math.hypot(dx,dy);if(d<1e-6)return 0;return Math.min(1,d/rayLen(dx/d,dy/d));}
+function surfZ(x,y){
+  const s=sOf(x,y);let z=-D*(1-s)+0.45*Math.sin(Math.PI*s);
+  const dl=Math.hypot(x-LP.x,y-LP.y);z+=0.5*Math.exp(-dl*dl/0.22);
+  const dh=segDist(x,y,U.x,U.y,LP.x,LP.y);z+=0.16*Math.exp(-dh*dh/0.05);
+  if(isFlac(x,y)){const w=Math.min(1,(y-foldY(x))/0.35);z=z*(1-w)+0.05*w;}
+  return z;
+}
+function wallZ(x,y){
+  let z=-4.4;
+  z+=1.0*Math.exp(-((x-0.1)**2/6+(y+0.7)**2/5));
+  z-=1.0*Math.exp(-((x+1.9)**2/0.9+(y-1.5)**2/0.35));
+  z-=0.8*Math.exp(-((x+2.7)**2+(y+2.9)**2)/0.45);
+  const fx=(x>-3.6&&x<1.6)?1:Math.exp(-Math.min((x+3.6)**2,(x-1.6)**2)/0.3);
+  z+=0.5*fx*Math.exp(-((y-2.75)**2)/0.12);
+  return z;
+}
+/* condition shape: retraction depth and perforation signed distance (positive = intact) */
+function ell(x,y,cx,cy,a,b,wob){const dx=(x-cx)/a,dy=(y-cy)/b,t=Math.atan2(dy,dx);return Math.hypot(dx,dy)/(1+wob*(0.07*Math.sin(5*t+1.3)+0.04*Math.sin(9*t+0.4)));}
+function holeSD(x,y){
+  switch(state.cond){
+    case'perf_small':return(ell(x,y,1.45,-2.0,0.85,0.7,1)-1)*0.7;
+    case'perf_kidney':{const s=sOf(x,y),dh=segDist(x,y,U.x,U.y,LP.x,LP.y);const m=Math.min((1-ell(x,y,0.0,-0.5,3.2,3.6,1))*3,dh-0.42,(0.86-s)*5,foldY(x)-0.6-y);return-m;}
+    case'perf_marginal':return(ell(x,y,-3.05,2.05,1.35,1.15,1)-1)*1.1;
+    case'perf_attic':return(ell(x,y,0.0,4.05,0.55,0.34,1)-1)*0.34;
+  }
+  return 10;
+}
+function condZ(x,y){
+  const z0=surfZ(x,y),s=sOf(x,y),g=state.grade;let w=0,z=z0;
+  if(state.cond==='ret_general'){w=1-s*s;z=z0-1.0*w*ss(1.0,0.9,s);}
+  else if(state.cond==='ret_ps'){const sc=g===4?1.25:1,q=((x+1.7)/(2.1*sc))**2+((y-1.6)/(1.9*sc))**2;
+    if(q<1&&!isFlac(x,y)){w=(Math.cos(Math.PI*Math.sqrt(q))*0.5+0.5)*ss(0.12,0.75,segDist(x,y,U.x,U.y,LP.x,LP.y))*ss(0.99,0.85,s);
+      const d=[0.6,1.7,4,5][g-1];z=Math.max(z0-d*w,Math.min(z0,wallZ(x,y)+(g===4?0.06:0.22)));}}
+  else if(state.cond==='ret_attic'){if(isFlac(x,y)){w=Math.min(1,(y-foldY(x))/0.3)*Math.min(1,Math.max(0,(0.995-s)/0.08));z=z0-[0.5,1.3,2.2,3.0][g-1]*w;}}
+  return{z,w};
+}
+
+const NS=60,NT=200;
+const tmGeo=new THREE.BufferGeometry();
+const tmV=[];
+{
+  const pos=[],idx=[];
+  for(let i=0;i<=NS;i++){const s=i/NS;for(let j=0;j<NT;j++){const a=j/NT*Math.PI*2,dx=Math.cos(a),dy=Math.sin(a),L=rayLen(dx,dy),x=U.x+dx*L*s,y=U.y+dy*L*s;pos.push(x,y,surfZ(x,y));
+    tmV.push({x,y,s,flac:isFlac(x,y),quad:quadOf(x,y),dl:Math.hypot(x-LP.x,y-LP.y),du:Math.hypot(x-U.x,y-U.y),dh:segDist(x,y,U.x,U.y,LP.x,LP.y),fold:nearFold(x,y),cone:inCone(x,y),rw:0});}}
+  for(let i=0;i<NS;i++)for(let j=0;j<NT;j++){const a=i*NT+j,b=i*NT+(j+1)%NT,c=(i+1)*NT+j,d=(i+1)*NT+(j+1)%NT;idx.push(a,c,b,b,c,d);}
+  tmGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));tmGeo.setIndex(idx);tmGeo.computeVertexNormals();
+  tmGeo.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(pos.length),3));
+}
+function quadOf(x,y){const px=x-U.x,py=y-U.y,sup=px*H.x+py*H.y>0,ant=H.x*py-H.y*px<0;return ant?(sup?'q_as':'q_ai'):(sup?'q_ps':'q_pi');}
+function inCone(x,y){const s=sOf(x,y);if(s<0.1||s>0.88)return false;let a=Math.atan2(y-U.y,x-U.x)-CL;a=Math.atan2(Math.sin(a),Math.cos(a));return Math.abs(a)<0.06+0.2*s;}
+function nearFold(x,y){return x>SP.x+0.3&&x<SA.x-0.3&&Math.abs(y-foldY(x))<0.16;}
+function regionAt(x,y,cone){
+  if(Math.hypot(x-LP.x,y-LP.y)<0.4)return'lateral_process';
+  if(nearFold(x,y))return'malleolar_folds';
+  if(isFlac(x,y))return sOf(x,y)>0.97?'notch_rivinus':'pars_flaccida';
+  if(Math.hypot(x-U.x,y-U.y)<0.4)return'umbo';
+  if(segDist(x,y,U.x,U.y,LP.x,LP.y)<0.2)return'manubrium';
+  if(sOf(x,y)>0.96)return'annulus';
+  if(cone&&inCone(x,y))return'cone_of_light';
+  return quadOf(x,y);
+}
+const REGC={pars_flaccida:[0.90,0.48,0.25],q_as:[0.25,0.53,0.80],q_ai:[0.24,0.70,0.62],q_ps:[0.80,0.36,0.55],q_pi:[0.56,0.66,0.24]};
+const REGN={pars_flaccida:'Pars flaccida',q_as:'Anterosuperior',q_ai:'Anteroinferior',q_ps:'Posterosuperior',q_pi:'Posteroinferior'};
+function rnd(k){const s=Math.sin(k*12.9898)*43758.5453;return s-Math.floor(s);}
+const tmNat=[],tmReg=[];
+tmV.forEach((v,k)=>{
+  let c=[0.72,0.72,0.70];const r=Math.max(0,(v.s-0.82)/0.18);c=c.map((q,i)=>q*(1-r)+[0.64,0.60,0.58][i]*r);
+  if(v.flac)c=[0.80,0.63,0.58];
+  if(v.dh<0.32){const w=1-v.dh/0.32;c=c.map((q,i)=>q*(1-w)+[0.95,0.92,0.84][i]*w);}
+  if(v.dl<0.45)c=[0.98,0.96,0.90];
+  const n=(rnd(k)-0.5)*0.03;tmNat.push(c.map(q=>q+n));
+  let g=v.flac?REGC.pars_flaccida:REGC[v.quad];
+  if(v.dh<0.2||v.du<0.35||v.dl<0.4)g=[0.95,0.95,0.92];
+  tmReg.push(g);
+});
+function tmMatch(v,hi){
+  switch(hi){case'tm_overview':return true;case'pars_tensa':return!v.flac&&v.s<0.97;case'pars_flaccida':return v.flac;case'malleolar_folds':return v.fold;
+  case'lateral_process':return v.dl<0.45;case'manubrium':return v.dh<0.25;case'umbo':return v.du<0.45;case'cone_of_light':return v.cone;
+  default:return!v.flac&&v.quad===hi;}
+}
+const ACC=[0.17,0.77,0.83];
+function paintTM(){
+  const arr=tmGeo.attributes.color.array,base=state.regions?tmReg:tmNat,hi=TM_IDS.includes(state.sel)?state.sel:null;
+  const tint=state.cond==='ret_ps'?[0.35,0.5,0.75,0.9][state.grade-1]:state.cond==='ret_attic'?0.4:state.cond==='ret_general'?0.12:0;
+  tmV.forEach((v,k)=>{let c=base[k];if(tint&&!state.regions&&v.rw>0){const ao=1-0.55*4*v.rw*(1-v.rw)*Math.min(1,tint*1.4);c=c.map((q,i)=>(q*(1-v.rw*tint)+[0.84,0.5,0.48][i]*v.rw*tint)*ao);}
+    if(hi){c=tmMatch(v,hi)?c.map((q,i)=>q*0.35+ACC[i]*0.65):c.map(q=>q*0.55);}arr[k*3]=c[0];arr[k*3+1]=c[1];arr[k*3+2]=c[2];});
+  tmGeo.attributes.color.needsUpdate=true;
+}
+const tmMat=holeify(new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,opacity:0.8,roughness:0.32,metalness:0,side:THREE.DoubleSide,depthWrite:false}));
+const tmMesh=tag(new THREE.Mesh(tmGeo,tmMat),'tm');tmMesh.userData.hole=true;membrane.add(tmMesh);
+
+// cone of light
+let coneMesh;
+{
+  const pos=[],idx=[],m=26,n=8;
+  for(let i=0;i<=m;i++){const s=0.1+0.78*i/m,hw=0.06+0.2*s;for(let j=0;j<=n;j++){const a=CL+(j/n-0.5)*2*hw,dx=Math.cos(a),dy=Math.sin(a),L=rayLen(dx,dy),x=U.x+dx*L*s,y=U.y+dy*L*s;pos.push(x,y,surfZ(x,y)+0.03);}}
+  for(let i=0;i<m;i++)for(let j=0;j<n;j++){const a=i*(n+1)+j;idx.push(a,a+n+1,a+1,a+1,a+n+1,a+n+2);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);
+  coneMesh=tag(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.85,side:THREE.DoubleSide,depthWrite:false,toneMapped:false})),'cone_of_light');
+  membrane.add(coneMesh);
+}
+// helpers
+function curve(pts){return new THREE.CatmullRomCurve3(pts.map(p=>V3(p[0],p[1],p[2])));}
+function tube(pts,r,mat,seg=48){return new THREE.Mesh(new THREE.TubeGeometry(curve(pts),seg,r,12,false),mat);}
+function taper(pts,r0,r1,mat,seg=40){const c=curve(pts),g=new THREE.TubeGeometry(c,seg,1,14,false),p=g.attributes.position;
+  for(let i=0;i<=seg;i++){const t=i/seg,cp=c.getPointAt(t),r=r0+(r1-r0)*t;for(let j=0;j<15;j++){const k=i*15+j;p.setXYZ(k,cp.x+(p.getX(k)-cp.x)*r,cp.y+(p.getY(k)-cp.y)*r,cp.z+(p.getZ(k)-cp.z)*r);}}
+  g.computeVertexNormals();return new THREE.Mesh(g,mat);}
+function blob(p,r,sc,mat){const m=new THREE.Mesh(new THREE.SphereGeometry(r,36,24),mat);m.position.set(p[0],p[1],p[2]);if(sc)m.scale.set(sc[0],sc[1],sc[2]);return m;}
+const std=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.55,metalness:0},o));
+const bone=(c=0xeadcc0)=>new THREE.MeshPhysicalMaterial({color:c,roughness:0.42,clearcoat:0.35,clearcoatRoughness:0.35,bumpMap:boneBump,bumpScale:0.6});
+// malleolar folds (rebuilt when the drum moves)
+let foldMeshes=[];
+function buildFolds(){
+  foldMeshes.forEach(m=>{membrane.remove(m);m.geometry.dispose();const i=pickables.indexOf(m);if(i>=0)pickables.splice(i,1);});objs.malleolar_folds=[];foldMeshes=[];
+  const mk=(x0,x1)=>{const pts=[];for(let k=0;k<=20;k++){const x=x0+(x1-x0)*k/20,y=foldY(x);pts.push([x,y,condZ(x,y).z+0.05]);}return pts;};
+  const fm=holeify(std(0xece6da,{transparent:true,opacity:0.8}));
+  for(const pts of[mk(SP.x+0.25,LP.x),mk(LP.x,SA.x-0.25)]){const m=tag(tube(pts,0.07,fm,30),'malleolar_folds');m.userData.hole=true;setHole(m.geometry,(x,y)=>holeSD(x,y));membrane.add(m);foldMeshes.push(m);}
+}
+// annulus
+const annulus=(()=>{const pts=[];for(let k=0;k<=90;k++){const th=NP+k/90*(2*Math.PI-(NP-NA));pts.push([A*1.02*Math.cos(th),B*1.02*Math.sin(th),0.05]);}
+  const m=tag(tube(pts,0.3,holeify(std(0xe2dbcc,{roughness:0.6})),180),'annulus');m.userData.hole=true;membrane.add(m);return m;})();
+// layers
+const layerMats={epidermis:std(0xd9cbbd,{transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false}),lamina_propria:std(0xf1ece0,{transparent:true,opacity:0.25,side:THREE.DoubleSide,depthWrite:false}),mucosa:std(0xe39b96,{transparent:true,opacity:0.55,side:THREE.DoubleSide,depthWrite:false})};
+const layerMeshes={};
+for(const k in layerMats){layerMeshes[k]=tag(new THREE.Mesh(tmGeo,holeify(layerMats[k])),k);layerMeshes[k].userData.hole=true;layerGroup.add(layerMeshes[k]);}
+const fibres=[];
+{
+  const rad=[],circ=[],loose=[];
+  for(let a=0;a<360;a+=4){const r=a*Math.PI/180,dx=Math.cos(r),dy=Math.sin(r),L=rayLen(dx,dy);let prev=null;
+    for(let i=0;i<=24;i++){const s=0.12+0.85*i/24,x=U.x+dx*L*s,y=U.y+dy*L*s,ok=!isFlac(x,y);if(ok&&prev)rad.push(...prev,x,y);prev=ok?[x,y]:null;}}
+  for(const s of[0.6,0.7,0.78,0.85,0.9,0.95]){let prev=null;for(let a=0;a<=360;a+=2){const r=a*Math.PI/180,dx=Math.cos(r),dy=Math.sin(r),L=rayLen(dx,dy),x=U.x+dx*L*s,y=U.y+dy*L*s,ok=!isFlac(x,y);if(ok&&prev)circ.push(...prev,x,y);prev=ok?[x,y]:null;}}
+  for(let k=0;k<160;k++){const x=SP.x+rnd(k+3)*(SA.x-SP.x),y=foldY(x)+rnd(k+77)*1.2;if(!isFlac(x,y)||sOf(x,y)>0.98)continue;const a=rnd(k+9)*Math.PI*2,l=0.25+rnd(k+5)*0.3;loose.push(x,y,x+Math.cos(a)*l,y+Math.sin(a)*l);}
+  for(const[xy,c,dz]of[[rad,0xf3d58a,0.02],[circ,0x8fd0f2,-0.02],[loose,0xf0b090,0.02]]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(xy.length/2*3),3));
+    const l=new THREE.LineSegments(g,holeify(new THREE.LineBasicMaterial({color:c})));l.userData={xy,dz};layerMeshes.lamina_propria.add(l);fibres.push(l);}
+}
+
+/* ---------------- ossicles, tendons, nerves, ligaments (TM frame) ---------------- */
+const malleusPivot=V3(0.25,5.7,-2.1);
+const malleusGroup=new THREE.Group();malleusGroup.position.copy(malleusPivot);ossGroup.add(malleusGroup);
+const mInner=new THREE.Group();mInner.position.copy(malleusPivot).multiplyScalar(-1);malleusGroup.add(mInner);
+{
+  const mm=bone(),man=bone(),lpm=bone(0xf6efe0);
+  const hp=[];for(let k=0;k<=12;k++){const t=k/12,x=LP.x+(U.x-LP.x)*t,y=LP.y+(U.y-LP.y)*t;hp.push([x,y,surfZ(x,y)-0.24]);}
+  mInner.add(tag(taper(hp,0.3,0.2,man,30),'manubrium'));
+  mInner.add(tag(blob([U.x,U.y,surfZ(U.x,U.y)-0.24],0.27,[1.25,1,0.8],man),'manubrium'));
+  mInner.add(tag(blob([LP.x,LP.y,surfZ(LP.x,LP.y)-0.36],0.4,[1,0.8,1],lpm),'lateral_process'));
+  mInner.add(tag(taper([[0.45,3.05,-0.3],[0.4,3.8,-0.9],[0.3,4.6,-1.6]],0.34,0.42,mm,20),'malleus'));
+  mInner.add(tag(taper([[0.4,3.9,-1.0],[1.1,4.05,-1.1],[1.8,4.1,-1.25]],0.16,0.07,mm,12),'malleus'));
+  const head=tag(blob([0.25,5.75,-2.1],1.1,[0.95,1.3,1.05],mm),'malleus');head.rotation.z=0.15;mInner.add(head);
+  const im=bone(0xe6d8ba);
+  const body=tag(blob([-1.2,5.6,-2.75],1.0,[0.85,1.2,1.15],im),'incus');body.rotation.z=-0.2;ossGroup.add(body);
+  ossGroup.add(tag(taper([[-1.6,5.8,-2.8],[-2.6,5.95,-2.85],[-3.6,6.0,-2.9]],0.55,0.14,im,16),'incus'));
+  ossGroup.add(tag(taper([[-1.3,5.0,-2.6],[-1.5,3.6,-2.3],[-1.7,2.3,-2.0],[-1.75,1.8,-1.9]],0.34,0.2,im,30),'incus'));
+  const isj=bone(0xe6d8ba);
+  ossGroup.add(tag(tube([[-1.75,1.8,-1.9],[-1.78,1.55,-2.15],[-1.8,1.45,-2.4]],0.17,isj,12),'is_joint'));
+  ossGroup.add(tag(blob([-1.8,1.45,-2.42],0.25,[1,1,0.8],isj),'is_joint'));
+  const sm=bone(0xf0e6cc);const fpz=wallZ(-1.9,1.5)+0.12;
+  ossGroup.add(tag(blob([-1.82,1.45,-2.62],0.27,[1,1.1,0.8],sm),'stapes'));
+  ossGroup.add(tag(taper([[-1.84,1.46,-2.75],[-1.05,1.5,-3.5],[-0.72,1.5,fpz]],0.12,0.09,sm,20),'stapes'));
+  ossGroup.add(tag(taper([[-1.84,1.46,-2.75],[-2.65,1.5,-3.5],[-3.08,1.5,fpz]],0.12,0.09,sm,20),'stapes'));
+  const fpg=new THREE.CylinderGeometry(1,1,0.16,40);fpg.rotateX(Math.PI/2);fpg.scale(1.3,0.58,1);
+  const fp=tag(new THREE.Mesh(fpg,sm),'stapes');fp.position.set(-1.9,1.5,fpz);ossGroup.add(fp);
+  ossGroup.add(tag(tube([[-4.8,2.6,-1.5],[-3.2,3.1,-1.3],[-1.75,3.35,-1.25],[0.4,3.5,-1.05],[2.4,3.7,-1.2],[4.4,3.9,-1.6]],0.11,std(0xf2d45c,{roughness:0.4}),60),'chorda_tympani'));
+  const cz=wallZ(1.4,2.55);
+  mInner.add(tag(tube([[1.4,2.55,cz+0.3],[0.9,3.0,-1.7],[0.42,3.35,-0.75]],0.12,std(0xf4f0e6),24),'tensor_tympani'));
+  ossGroup.add(tag(taper([[1.4,2.6,cz+0.2],[4,3.2,-4.4],[6.5,3.4,-5.0]],0.3,0.55,std(0xb85a55,{roughness:0.5}),30),'tensor_tympani'));
+  ossGroup.add(tag(blob([1.4,2.55,cz+0.25],0.3,null,bone(0xe8dccb)),'tensor_tympani'));
+  const pz=wallZ(-3.5,1.7);
+  const pe=tag(new THREE.Mesh(new THREE.ConeGeometry(0.5,1.2,20),bone(0xe8dccb)),'stapedius');pe.position.set(-3.6,1.65,pz+0.1);pe.rotation.z=-Math.PI/2;ossGroup.add(pe);
+  ossGroup.add(tag(tube([[-3.0,1.65,pz+0.2],[-2.5,1.55,-3.0],[-1.95,1.47,-2.75]],0.09,std(0xf4f0e6),16),'stapedius'));
+  const lig=std(0xf3e6da,{transparent:true,opacity:0.75,roughness:0.4});
+  mInner.add(tag(taper([[0.25,7.0,-2.1],[0.3,7.4,-2.2],[0.35,7.75,-2.3]],0.14,0.28,lig,10),'ligaments'));
+  mInner.add(tag(taper([[1.7,4.1,-1.25],[3.6,4.25,-1.4],[5.9,4.4,-1.6]],0.1,0.22,lig,16),'ligaments'));
+  ossGroup.add(tag(taper([[-3.5,5.95,-2.9],[-4.3,5.6,-3.1],[-5.2,5.3,-3.2]],0.12,0.26,lig,12),'ligaments'));
+}
+ossGroup.children.concat(mInner.children).forEach(m=>{m.castShadow=false;});
+
+/* ---------------- middle-ear cavity (TM frame) ---------------- */
+function wallRegion(x,y){
+  if(Math.hypot(x+2.7,y+2.9)<0.9)return'round_window';
+  if(Math.hypot((x+1.9)/1.4,(y-1.5)/0.8)<1)return'oval_window';
+  if(Math.abs(y-2.75)<0.35&&x>-3.6&&x<1.6)return'facial_nerve';
+  if((x-0.1)**2/6+(y+0.7)**2/5<1)return'promontory';
+  return y>4.6?'epitympanum':y<-4.3?'hypotympanum':'mesotympanum';
+}
+function cavZone(x,y,z){if(z<-3.2&&z-wallZ(x,y)<0.25)return wallRegion(x,y);return y>4.6?'epitympanum':y<-4.3?'hypotympanum':'mesotympanum';}
+function cavHole(x,y,z){
+  let sd=10;
+  {const r=Math.hypot(x/(A*0.99),y/(B*0.99));sd=Math.min(sd,-Math.min((1-r)*3,(z+0.05)*4));}
+  {const r=Math.hypot((x+5.7)/1.6,(y-6.0)/1.15,(z+2.7)/1.3);sd=Math.min(sd,(r-1)*1.1);}
+  if(state.cond==='ret_attic'&&state.grade>=3){const E=state.grade===3?0.8:1.8,m=Math.min(1.0+0.5*E-Math.abs(x),y-4.3,4.7+E-y,z+0.4);sd=Math.min(sd,-m);}
+  return sd;
+}
+const CC={x:0.4,y:0.9,z:-2.4},EX={x:6.0,y:6.8,z:3.0};
+const cavGeo=new THREE.BufferGeometry(),cavV=[],cavBase=[];
+{
+  const NLON=160,NLAT=120,pos=[],uv=[],idx=[];const sp=a=>Math.sign(a)*Math.abs(a)**0.55;
+  for(let i=0;i<=NLAT;i++){const ph=Math.PI*i/NLAT;for(let j=0;j<=NLON;j++){const th=2*Math.PI*j/NLON,dx=Math.sin(ph)*Math.sin(th),dy=Math.cos(ph),dz=Math.sin(ph)*Math.cos(th);
+    let x=CC.x+EX.x*sp(dx),y=CC.y+EX.y*sp(dy),z=CC.z+EX.z*sp(dz);
+    const n=0.22*(Math.sin(1.7*x+0.9*y)+Math.sin(1.3*y-2.1*z)+Math.sin(2.3*z+1.1*x))/3;x+=n*dx;y+=n*dy;z+=n*dz;
+    if(dy<-0.3){y+=0.35*Math.max(0,Math.sin(3.1*x)*Math.sin(2.7*z+1));const jb=Math.exp(-((x+1)**2+(z+2.8)**2)/2.2);y+=1.4*jb;}
+    const wz=wallZ(x,y);if(z<wz)z=wz;if(z>0.35)z=0.35;
+    pos.push(x,y,z);uv.push(th/(2*Math.PI),1-ph/Math.PI);
+    const jb=dy<-0.3?Math.exp(-((x+1)**2+(z+2.8)**2)/2.2):0,zone=cavZone(x,y,z);cavV.push({x,y,z,zone});
+    let c=[1,1,1];const pr=Math.exp(-((x-0.1)**2/6+(y+0.7)**2/5));if(z<-3.2)c=c.map(q=>q*(1+0.08*pr));
+    if(zone==='round_window')c=[0.42,0.32,0.36];if(zone==='oval_window')c=[0.6,0.45,0.42];
+    if(jb>0.05)c=c.map((q,i)=>q*(1-jb*0.6)+[0.55,0.58,0.92][i]*jb*0.6);
+    if(y>5.5)c=c.map((q,i)=>q*[1,0.98,0.93][i]);
+    const ao=0.82+0.18*ss(-0.2,-2.0,z)*ss(7.6,6.0,y);cavBase.push(c.map(q=>q*ao));}}
+  for(let i=0;i<NLAT;i++)for(let j=0;j<NLON;j++){const a=i*(NLON+1)+j,b=a+1,c=a+NLON+1,d=c+1;idx.push(a,c,b,b,c,d);}
+  cavGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));cavGeo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));cavGeo.setIndex(idx);cavGeo.computeVertexNormals();
+  // make sure normals point outward (so BackSide = mucosa inside)
+  const k=(NLAT/2|0)*(NLON+1)+(NLON/4|0),nx=cavGeo.attributes.normal.getX(k);if(nx*(pos[k*3]-CC.x)<0){const ix=cavGeo.index.array;for(let t=0;t<ix.length;t+=3){const s=ix[t+1];ix[t+1]=ix[t+2];ix[t+2]=s;}cavGeo.computeVertexNormals();}
+  cavGeo.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(pos.length),3));
+}
+const mucMat=holeify(new THREE.MeshPhysicalMaterial({map:mucosaTex,vertexColors:true,roughness:0.42,clearcoat:0.55,clearcoatRoughness:0.22,side:THREE.BackSide,clippingPlanes:[cavCut]}));
+const boneOut=holeify(new THREE.MeshStandardMaterial({color:0xcfc2a6,roughness:0.85,bumpMap:boneBump,bumpScale:1.2,side:THREE.FrontSide,clippingPlanes:[cavCut]}));
+const cavIn=tag(new THREE.Mesh(cavGeo,mucMat),'cavity'),cavOut=tag(new THREE.Mesh(cavGeo,boneOut),'cavity');cavIn.userData.cav=cavOut.userData.cav=true;wallsGroup.add(cavIn,cavOut);
+const CAV_IDS=['promontory','round_window','oval_window','mesotympanum','epitympanum','hypotympanum'];
+function paintCav(){const a=cavGeo.attributes.color.array,hi=CAV_IDS.includes(state.sel)?state.sel:null;
+  cavBase.forEach((c,k)=>{let o=c;if(hi)o=cavV[k].zone===hi?c.map((q,i)=>q*0.35+ACC[i]*0.65):c.map(q=>q*0.6);a[k*3]=o[0];a[k*3+1]=o[1];a[k*3+2]=o[2];});cavGeo.attributes.color.needsUpdate=true;}
+{
+  const rw=tag(new THREE.Mesh(new THREE.CircleGeometry(0.5,28),std(0x8a7f92,{side:THREE.DoubleSide,roughness:0.3})),'round_window');rw.position.set(-2.7,-2.9,wallZ(-2.7,-2.9)+0.08);rw.rotation.y=-0.4;wallsGroup.add(rw);
+  const fz=(x,y)=>wallZ(x,y)+0.3;
+  wallsGroup.add(tag(tube([[1.6,2.75,fz(1.6,2.75)],[-1,2.75,fz(-1,2.75)],[-3.3,2.7,fz(-3.3,2.7)],[-4.2,1.8,-3.7],[-4.5,-1,-3.5],[-4.6,-4.5,-3.3]],0.32,std(0xf0cf52,{transparent:true,opacity:0.85,roughness:0.35}),60),'facial_nerve'));
+  wallsGroup.add(tag(taper([[-5.0,6.0,-2.7],[-7.2,6.3,-3.0],[-9.6,6.0,-3.4]],1.25,1.6,std(0x5a3434,{side:THREE.DoubleSide,roughness:0.6}),30),'aditus'));
+  wallsGroup.add(tag(taper([[6.0,1.2,-3.0],[9,-0.4,-5.4],[12,-2.4,-8.4],[14.5,-3.8,-11.4]],1.15,0.75,new THREE.MeshPhysicalMaterial({color:0xc07b74,roughness:0.45,clearcoat:0.4,transparent:true,opacity:0.85,side:THREE.DoubleSide}),40),'eustachian'));
+}
+
+/* ---------------- ear canal (root frame) ---------------- */
+const canalGeo=new THREE.BufferGeometry();const canalV=[],canalBase=[];let canalPos0;
+{
+  const N=[{z:28,x:0,y:-0.4,rx:3.5,ry:4.5},{z:22,x:0.5,y:0.6,rx:3.3,ry:4.0},{z:16,x:-0.3,y:0.4,rx:2.9,ry:3.3},{z:12,x:-0.1,y:0.1,rx:3.0,ry:3.4},{z:7,x:0.3,y:-0.1,rx:3.5,ry:3.9},{z:4,x:0.1,y:0,rx:3.9,ry:4.3}];
+  const cr=(a,b,c,d,t)=>0.5*(2*b+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t);
+  const NJ=72,rings=[];
+  for(let i=0;i<N.length-1;i++){const p0=N[i-1]||N[i],p1=N[i],p2=N[i+1],p3=N[i+2]||N[i+1];for(let s=0;s<10;s++){const t=s/10,o={};for(const k of['z','x','y','rx','ry'])o[k]=cr(p0[k],p1[k],p2[k],p3[k],t);rings.push(o);}}
+  rings.push(N[N.length-1]);
+  const pos=[],idx=[];let R=0;
+  const ringPt=(o,b)=>V3(o.x+o.rx*Math.cos(b),o.y+o.ry*Math.sin(b),o.z);
+  for(const o of rings){for(let j=0;j<NJ;j++){const b=j/NJ*Math.PI*2,p=ringPt(o,b);pos.push(p.x,p.y,p.z);canalV.push({x:p.x,y:p.y,z:p.z,b,t:0,blend:false});}R++;}
+  const last=rings[rings.length-1],NB=12;
+  for(let i=1;i<=NB;i++){const t=i/NB,e=t*t*(3-2*t);for(let j=0;j<NJ;j++){const b=j/NJ*Math.PI*2,p0=ringPt(last,b),p1=V3(A*1.07*Math.cos(b),B*1.07*Math.sin(b),0.1).applyMatrix4(tmGroup.matrix),p=p0.lerp(p1,e);pos.push(p.x,p.y,p.z);canalV.push({x:p.x,y:p.y,z:p.z,b,t,blend:true});}R++;}
+  for(let i=0;i<R-1;i++)for(let j=0;j<NJ;j++){const a=i*NJ+j,b=i*NJ+(j+1)%NJ,c=(i+1)*NJ+j,d=(i+1)*NJ+(j+1)%NJ;idx.push(a,b,c,b,d,c);}
+  canalGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));canalGeo.setIndex(idx);canalGeo.computeVertexNormals();canalPos0=Float32Array.from(pos);
+  canalV.forEach((v,k)=>{const w=Math.min(1,Math.max(0,(v.z-16.5)/1.5));let c=[0.9*(1-w)+0.79*w,0.70*(1-w)+0.54*w,0.64*(1-w)+0.44*w];
+    const deg=v.b*180/Math.PI;if(v.z<10&&deg>78&&deg<118){const s=(1-Math.abs(deg-98)/20)*Math.min(1,(10-v.z)/4)*0.7;c=c.map((q,i)=>q*(1-s)+[0.86,0.42,0.40][i]*s);}
+    const n=(rnd(k*0.37)-0.5)*0.05;canalBase.push(c.map(q=>q+n));});
+  canalGeo.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(pos.length),3));
+  const hp=[];for(let k=0;k<320;k++){const z=18+rnd(k+1)*9.5,b=rnd(k+2)*Math.PI*2;let o=rings[0];for(const r of rings)if(Math.abs(r.z-z)<Math.abs(o.z-z))o=r;const p=ringPt(o,b),c=V3(o.x,o.y,o.z),dir=c.sub(p).normalize().multiplyScalar(0.6+rnd(k+3)*0.9);dir.z+=0.7+rnd(k+4)*0.6;hp.push(p.x,p.y,p.z,p.x+dir.x,p.y+dir.y,p.z+dir.z);}
+  const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.Float32BufferAttribute(hp,3));
+  canalGroup.add(new THREE.LineSegments(hg,new THREE.LineBasicMaterial({color:0x4a3324,clippingPlanes:[cut]})));
+  const wax=std(0xa8752a,{roughness:0.35,clippingPlanes:[cut]});
+  for(let k=0;k<6;k++){const z=19+rnd(k+40)*7,b=rnd(k+50)*Math.PI*2;let o=rings[0];for(const r of rings)if(Math.abs(r.z-z)<Math.abs(o.z-z))o=r;const p=ringPt(o,b);canalGroup.add(tag(blob([p.x*0.96+o.x*0.04,p.y*0.96+o.y*0.04,p.z],0.35+rnd(k+60)*0.3,[1,1,1.6],wax),'cartilaginous'));}
+}
+function erodeScutum(){ // notch the canal rim upward over the attic for Tos III/IV
+  const p=canalGeo.attributes.position,E=state.cond==='ret_attic'&&state.grade>=3?(state.grade===3?0.8:1.8):0;
+  canalV.forEach((v,k)=>{let x=canalPos0[k*3],y=canalPos0[k*3+1],z=canalPos0[k*3+2];
+    if(E&&v.blend){const deg=v.b*180/Math.PI,w=ss(0.35,1,v.t)*Math.max(0,Math.cos((deg-90)/38*Math.PI/2));if(deg>52&&deg<128){y+=E*w;z-=E*0.6*w;}}p.setXYZ(k,x,y,z);});
+  p.needsUpdate=true;canalGeo.computeVertexNormals();
+}
+function canalMatch(v,hi){switch(hi){case'ear_canal':return true;case'cartilaginous':return v.z>17;case'bony':return v.z<=17;case'isthmus':return Math.abs(v.z-15.5)<1.3;case'anterior_recess':return v.blend&&v.x>1.2&&v.y<-0.3;}return false;}
+const CANAL_IDS=['ear_canal','cartilaginous','bony','isthmus','anterior_recess'];
+function paintCanal(){const a=canalGeo.attributes.color.array,hi=CANAL_IDS.includes(state.sel)?state.sel:null;
+  canalBase.forEach((c,k)=>{let o=c;if(hi)o=canalMatch(canalV[k],hi)?c.map((q,i)=>q*0.35+ACC[i]*0.65):c.map(q=>q*0.6);a[k*3]=o[0];a[k*3+1]=o[1];a[k*3+2]=o[2];});canalGeo.attributes.color.needsUpdate=true;}
+const canalMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.55,side:THREE.DoubleSide,clippingPlanes:[cut]});
+const canalMesh=tag(new THREE.Mesh(canalGeo,canalMat),'canal');canalGroup.add(canalMesh);
+
+/* ---------------- conditions ---------------- */
+const keratin=new THREE.Group();patho.add(keratin);
+const kerMat=std(0xf6f1e4,{roughness:0.8});
+let holePct=0;
+function applyCondition(){
+  const p=tmGeo.attributes.position;
+  tmV.forEach((v,k)=>{const r=condZ(v.x,v.y);p.setZ(k,r.z);v.rw=r.w;});
+  p.needsUpdate=true;tmGeo.computeVertexNormals();
+  setHole(tmGeo,(x,y)=>holeSD(x,y));setHole(annulus.geometry,(x,y)=>holeSD(x,y));setHole(cavGeo,cavHole);
+  for(const l of fibres){const{xy,dz}=l.userData,a=l.geometry.attributes.position;for(let i=0;i<xy.length/2;i++){const x=xy[i*2],y=xy[i*2+1];a.setXYZ(i,x,y,condZ(x,y).z+dz);}a.needsUpdate=true;setHole(l.geometry,(x,y)=>holeSD(x,y));}
+  buildFolds();erodeScutum();
+  malleusGroup.rotation.x=state.cond==='ret_general'?0.165:0;
+  keratin.clear();
+  if(state.cond==='ret_attic'&&state.grade>=3){for(let k=0;k<(state.grade===3?6:12);k++){const x=(rnd(k+11)-0.5)*1.6,y=4.0+rnd(k+21)*0.5;if(!isFlac(x,y))continue;const m=blob([x,y,condZ(x,y).z+0.08],0.12+rnd(k+31)*0.14,[1.4,0.8,0.6],kerMat);keratin.add(m);}}
+  // perforation size as % of pars tensa
+  let t=0,h=0;if(state.cond.startsWith('perf')&&state.cond!=='perf_attic'){for(let i=0;i<120;i++)for(let j=0;j<120;j++){const x=-A+2*A*i/119,y=-B+2*B*j/119;if((x/A)**2+(y/B)**2>1||isFlac(x,y))continue;t++;if(holeSD(x,y)<0)h++;}}holePct=t?Math.round(100*h/t):0;
+  const LBL=LABELS.find(L=>L.id==='cond'),c=CONDS[state.cond];if(c.at){LBL.s=[c.at[0],c.at[1],0.2];LBL.el.textContent=c.lab;}
+  for(const L of LABELS)if(L.s)L.p.set(L.s[0],L.s[1],condZ(L.s[0],L.s[1]).z+L.s[2]);
+  paintTM();applyVis();
+}
+
+/* ---------------- labels ---------------- */
+const S=(x,y,dz=0.12)=>({s:[x,y,dz],p:V3(x,y,0)});
+const LABELS=[
+  {id:'cond',l:'',f:'tm',...S(0,0),v:'oa',g:'cond',cls:'cond'},
+  {id:'pars_flaccida',l:'Pars flaccida',f:'tm',...S(-0.1,4.0),v:'o',g:'tm'},
+  {id:'malleolar_folds',l:'Malleolar fold',f:'tm',...S(1.6,foldY(1.6)),v:'o',g:'tm'},
+  {id:'lateral_process',l:'Lateral process',f:'tm',...S(LP.x,LP.y,0.3),v:'o',g:'tm'},
+  {id:'manubrium',l:'Handle of malleus',f:'tm',...S(0.3,1.4),v:'o',g:'tm'},
+  {id:'umbo',l:'Umbo',f:'tm',...S(U.x,U.y),v:'oa',g:'tm'},
+  {id:'cone_of_light',l:'Cone of light',f:'tm',...S(U.x+1.9*Math.cos(CL),U.y+1.9*Math.sin(CL)),v:'o',g:'cone'},
+  {id:'q_as',l:'Anterosuperior',f:'tm',...S(2.7,1.0),v:'o',g:'tm'},
+  {id:'q_ai',l:'Anteroinferior',f:'tm',...S(1.2,-3.0),v:'o',g:'tm'},
+  {id:'q_ps',l:'Posterosuperior',f:'tm',...S(-2.6,2.2),v:'o',g:'tm'},
+  {id:'q_pi',l:'Posteroinferior',f:'tm',...S(-2.2,-2.0),v:'o',g:'tm'},
+  {id:'pars_tensa',l:'Pars tensa',f:'tm',...S(-2.4,-1.0),v:'a',g:'tm'},
+  {id:'annulus',l:'Annulus',f:'tm',p:V3(A*Math.cos(3.6),B*Math.sin(3.6),0.4),v:'oa',g:'tm'},
+  {id:'notch_rivinus',l:'Notch of Rivinus',f:'tm',p:V3(-0.6,B+0.25,0.2),v:'o',g:'tm'},
+  {id:'is_joint',l:'Incudostapedial joint',f:'tm',p:V3(-1.8,1.45,-2.3),v:'o',g:'oss'},
+  {id:'epidermis',l:'Outer layer',f:'tm',p:V3(-3.4,-2.6,0),v:'a',g:'layers',lz:'epidermis'},
+  {id:'lamina_propria',l:'Fibrous layer',f:'tm',p:V3(-4.1,0.2,0),v:'a',g:'layers',lz:'lamina_propria'},
+  {id:'mucosa',l:'Mucosal layer',f:'tm',p:V3(-3.3,2.8,0),v:'a',g:'layers',lz:'mucosa'},
+  {id:'malleus',l:'Malleus',f:'tm',p:V3(0.25,7.2,-2.1),v:'am',g:'oss'},
+  {id:'incus',l:'Incus',f:'tm',p:V3(-2.6,6.6,-2.9),v:'am',g:'oss'},
+  {id:'stapes',l:'Stapes',f:'tm',p:V3(-1.9,1.5,-3.8),v:'am',g:'oss'},
+  {id:'chorda_tympani',l:'Chorda tympani',f:'tm',p:V3(-4.7,2.6,-1.5),v:'am',g:'oss'},
+  {id:'tensor_tympani',l:'Tensor tympani',f:'tm',p:V3(3.5,3.1,-4.1),v:'am',g:'oss'},
+  {id:'stapedius',l:'Stapedius',f:'tm',p:V3(-3.6,1.2,-4.0),v:'m',g:'oss'},
+  {id:'ligaments',l:'Malleal ligament',f:'tm',p:V3(3.8,4.3,-1.4),v:'m',g:'oss'},
+  {id:'promontory',l:'Promontory',f:'tm',p:V3(0.1,-0.7,wallZ(0.1,-0.7)+0.1),v:'a',g:'walls'},
+  {id:'hypotympanum',l:'Jugular dome',f:'tm',p:V3(-1,-5.2,-2.8),v:'a',g:'walls'},
+  {id:'facial_nerve',l:'Facial nerve',f:'tm',p:V3(-4.4,-0.5,-3.3),v:'m',g:'walls'},
+  {id:'eustachian',l:'Eustachian tube',f:'tm',p:V3(11,-1.6,-7.2),v:'a',g:'walls'},
+  {id:'epitympanum',l:'Attic',f:'tm',p:V3(-3.4,7.0,-3.8),v:'a',g:'walls'},
+  {id:'aditus',l:'Aditus',f:'tm',p:V3(-6.6,6.9,-2.9),v:'a',g:'walls'},
+  {id:'ear_canal',l:'Ear canal',f:'root',p:V3(0,-4.6,27),v:'a',g:'canal'},
+  {id:'cartilaginous',l:'Cartilaginous part',f:'root',p:V3(0,4.3,21),v:'a',g:'canal'},
+  {id:'bony',l:'Bony part',f:'root',p:V3(0,-3.8,9),v:'a',g:'canal'},
+  {id:'isthmus',l:'Isthmus',f:'root',p:V3(0,3.8,15),v:'a',g:'canal'},
+  {id:'anterior_recess',l:'Anterior recess',f:'tm',p:V3(3.5,-2.7,0.3),v:'a',g:'canal'}
+];
+const labelBox=$('#labels');
+for(const L of LABELS){const b=document.createElement('button');b.className='lab'+(L.cls?' '+L.cls:'');b.textContent=L.l;b.addEventListener('click',()=>L.id==='cond'?showInfo(state.cond):select(L.id));labelBox.appendChild(b);L.el=b;}
+
+/* ---------------- UI ---------------- */
+const groupVis={tm:()=>true,layers:()=>state.layers,oss:()=>state.oss,walls:()=>state.walls,canal:()=>state.canal,cond:()=>state.cond!=='normal',cone:()=>state.cond==='normal'};
+function applyVis(){
+  canalGroup.visible=state.canal;ossGroup.visible=state.oss;wallsGroup.visible=state.walls;
+  layerGroup.visible=state.layers;tmMesh.visible=!state.layers;coneMesh.visible=!state.layers&&!state.regions&&state.view!=='medial'&&state.cond==='normal';
+  foldMeshes.forEach(m=>m.visible=!state.layers&&!state.regions);
+  const cp=state.cut?[cut]:[];canalMat.clippingPlanes=cp;canalGroup.children.forEach(o=>{if(o.material&&o!==canalMesh)o.material.clippingPlanes=cp;});
+  const cc=state.cut?[cavCut]:[];mucMat.clippingPlanes=cc;boneOut.clippingPlanes=cc;
+  layerMeshes.epidermis.position.z=state.gap;layerMeshes.mucosa.position.z=-state.gap;
+  $('#legend').hidden=!state.regions;
+  for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-walls'])$('#'+id).checked=state[id.slice(2)];
+}
+$('#legend').innerHTML=Object.keys(REGC).map(k=>`<div><i style="background:rgb(${REGC[k].map(v=>Math.round(v*255)).join(',')})"></i>${REGN[k]}</div>`).join('')+'<div><i style="background:#f2f2ec"></i>Malleus handle &amp; umbo</div>';
+for(const id of['t-labels','t-regions','t-layers','t-canal','t-cut','t-oss','t-walls'])$('#'+id).addEventListener('change',e=>{state[id.slice(2)]=e.target.checked;if(id==='t-regions')paintTM();if(id==='t-layers'&&e.target.checked&&!state.sel)select('lamina_propria');applyVis();});
+$('#r-op').addEventListener('input',e=>{tmMat.opacity=+e.target.value;$('#o-op').textContent=Math.round(e.target.value*100)+'%';});
+$('#r-gap').addEventListener('input',e=>{state.gap=+e.target.value;$('#o-gap').textContent=state.gap.toFixed(1)+' mm';applyVis();});
+$('#cond').addEventListener('change',e=>{state.cond=e.target.value;const c=CONDS[state.cond];$('#gradeRow').hidden=!c.g;state.sel=null;clearHi();applyCondition();
+  if(state.cond!=='normal'&&state.view==='overview')setView('scope');showInfo(state.cond==='normal'?'tm_overview':state.cond);});
+$('#r-grade').addEventListener('input',e=>{state.grade=+e.target.value;$('#o-grade').textContent=ROMAN[state.grade-1];applyCondition();showInfo(state.cond);});
+
+const groups={};for(const id in INFO)(groups[INFO[id].g]=groups[INFO[id].g]||[]).push(id);
+$('#idx').innerHTML=Object.keys(groups).map(g=>`<div><h3>${g}</h3><div class="chips">${groups[g].map(id=>`<button class="chip" data-id="${id}">${INFO[id].t.replace(/ \(.*\)/,'')}</button>`).join('')}</div></div>`).join('');
+$('#idx').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b)select(b.dataset.id);});
+
+const para=p=>p.startsWith('Clinical:')||p.startsWith('Audiology:')?`<p class="clin"><strong>${p.split(':')[0]}:</strong>${p.slice(p.indexOf(':')+1)}</p>`:`<p>${p}</p>`;
+function showInfo(id){
+  if(CONDS[id]&&id!=='normal'){const c=CONDS[id];let h=`<p class="grp">Condition · ${state.ear>0?'right':'left'} ear</p><h2>${c.t}</h2>`;
+    if(c.g)h+=`<p class="grade"><strong>${c.scale} ${c.g[state.grade-1]}</strong></p>`;
+    if(holePct)h+=`<p class="grade">About <strong>${holePct}%</strong> of the pars tensa is missing.</p>`;
+    $('#info').innerHTML=h+c.b.map(para).join('');return;}
+  const it=INFO[id]||INFO.tm_overview;let body=it.b.map(para).join('');
+  if(id==='cone_of_light')body+=`<p class="clin">Showing a <strong>${state.ear>0?'right':'left'}</strong> ear — the reflex is at about ${state.ear>0?'5':'7'} o’clock.${state.cond!=='normal'?' It is hidden while a condition is shown.':''}</p>`;
+  $('#info').innerHTML=`<p class="grp">${it.g}</p><h2>${it.t}</h2>${body}`;
+}
+function clearHi(){for(const k in objs)for(const m of objs[k])if(m.material&&m.material.emissive)m.material.emissive.setHex(0);}
+function select(id){
+  state.sel=state.sel===id?null:id;
+  if(['epidermis','lamina_propria','mucosa'].includes(state.sel)&&!state.layers){state.layers=true;applyVis();}
+  showInfo(state.sel||(state.cond!=='normal'?state.cond:'tm_overview'));
+  clearHi();
+  if(state.sel&&objs[state.sel])for(const m of objs[state.sel])if(m.material&&m.material.emissive){m.material.emissive.setHex(0x1aa6b4);m.material.emissiveIntensity=0.9;}
+  paintTM();paintCav();paintCanal();
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-current',b.dataset.id===state.sel));
+  LABELS.forEach(L=>L.el.classList.toggle('on',L.id===state.sel));
+}
+
+// picking
+const ray=new THREE.Raycaster();let down=null;
+const shown=o=>{for(let p=o;p;p=p.parent)if(!p.visible)return false;return true;};
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return;down=null;
+  const r=canvas.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
+  const hits=ray.intersectObjects(pickables.filter(shown),false).filter(h=>{
+    const cp=h.object.material.clippingPlanes;if(cp)for(const pl of cp)if(pl.distanceToPoint(h.point)<0)return false;
+    if(h.object.userData.hole||h.object.userData.cav){const p=tmGroup.worldToLocal(h.point.clone());if((h.object.userData.cav?cavHole(p.x,p.y,p.z):holeSD(p.x,p.y))<0)return false;}
+    return true;});
+  if(!hits.length)return;const h=hits[0];let id=h.object.userData.id;const p=tmGroup.worldToLocal(h.point.clone());
+  if(id==='tm')id=regionAt(p.x,p.y,!state.regions&&state.cond==='normal');
+  else if(id==='cavity')id=cavZone(p.x,p.y,p.z);
+  else if(id==='canal'){const q=root.worldToLocal(h.point.clone()),v={x:q.x,y:q.y,z:q.z,blend:q.z<4.2};id=canalMatch(v,'anterior_recess')?'anterior_recess':canalMatch(v,'isthmus')?'isthmus':v.z>17?'cartilaginous':'bony';}
+  select(id);
+});
+
+// views
+const scopeEl=$('#scope');
+scopeEl.innerHTML='<div class="ring"></div>'+[12,3,6,9].map(n=>`<span class="t" data-n="${n}">${n}</span>`).join('')+'<span class="t side" data-s="r"></span><span class="t side" data-s="l"></span>';
+function layoutScope(){const w=stage.clientWidth,h=stage.clientHeight,R=Math.min(w,h)*0.43,cx=w/2,cy=h/2;const ring=scopeEl.querySelector('.ring');ring.style.width=ring.style.height=2*R+'px';
+  scopeEl.querySelectorAll('[data-n]').forEach(t=>{const a=(+t.dataset.n)/12*Math.PI*2;t.style.left=cx+Math.sin(a)*(R+14)+'px';t.style.top=cy-Math.cos(a)*(R+14)+'px';});
+  const ri=scopeEl.querySelector('[data-s=r]'),le=scopeEl.querySelector('[data-s=l]');ri.textContent=state.ear>0?'Anterior':'Posterior';le.textContent=state.ear>0?'Posterior':'Anterior';
+  const off=Math.min(R+60,w/2-40);ri.style.left=cx+off+'px';le.style.left=cx-off+'px';ri.style.top=le.style.top=cy+30+'px';}
+function updateCuts(){root.updateMatrixWorld(true);cut.normal.set(-state.ear,0,0);cut.constant=0;cavCut.copy(cavLocal).applyMatrix4(tmGroup.matrixWorld);}
+function setView(v){
+  state.view=v;document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+  scopeEl.hidden=v!=='scope';
+  controls.minAzimuthAngle=-Infinity;controls.maxAzimuthAngle=Infinity;controls.minPolarAngle=0;controls.maxPolarAngle=Math.PI;controls.minDistance=4;controls.maxDistance=90;
+  hemi.intensity=1.0;key.intensity=1.6;fill.intensity=0.5;scopeLight.intensity=0;meLight.intensity=0.9;
+  if(v==='overview'){state.cut=true;state.walls=true;state.canal=true;camera.fov=38;camera.position.set(state.ear*19,-3,29);controls.target.set(0,0.5,2);}
+  if(v==='scope'){state.cut=false;state.walls=true;state.canal=true;camera.fov=26;camera.position.set(0,0.3,26);controls.target.set(0,0,0);
+    controls.minAzimuthAngle=-0.3;controls.maxAzimuthAngle=0.3;controls.minPolarAngle=Math.PI/2-0.25;controls.maxPolarAngle=Math.PI/2+0.25;controls.minDistance=9;controls.maxDistance=29;
+    hemi.intensity=0.3;key.intensity=0;fill.intensity=0;scopeLight.intensity=2;meLight.intensity=0.35;}
+  if(v==='medial'){state.walls=false;state.cut=false;camera.fov=36;camera.position.copy(tmGroup.localToWorld(V3(-1.5,1.0,-22)));controls.target.copy(tmGroup.localToWorld(V3(-0.5,1.5,-1.5)));}
+  camera.updateProjectionMatrix();applyVis();layoutScope();
+}
+$('#views').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setView(b.dataset.v);});
+$('#ear').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.ear=+b.dataset.ear;document.querySelectorAll('#ear button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  root.scale.x=state.ear;updateCuts();setView(state.view);showInfo(state.sel||(state.cond!=='normal'?state.cond:'tm_overview'));});
+
+// resize + loop
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();layoutScope();}
+const ro=new ResizeObserver(resize);ro.observe(stage);
+const tmp=new THREE.Vector3();
+function updateLabels(){
+  const w=stage.clientWidth,h=stage.clientHeight,vk={overview:'a',scope:'o',medial:'m'}[state.view],R=Math.min(w,h)*0.43;
+  for(const L of LABELS){
+    if(!state.labels||!L.v.includes(vk)||!groupVis[L.g]()||(state.layers&&L.g==='tm')){L.el.style.display='none';continue;}
+    tmp.copy(L.p);if(L.lz)tmp.z+=layerMeshes[L.lz].position.z;(L.f==='tm'?tmGroup:root).localToWorld(tmp);tmp.project(camera);
+    const x=(tmp.x*0.5+0.5)*w,y=(-tmp.y*0.5+0.5)*h;
+    if(tmp.z>1||x<-20||x>w+20||y<-20||y>h+20||(state.view==='scope'&&Math.hypot(x-w/2,y-h/2)>R)){L.el.style.display='none';continue;}
+    L.el.style.display='';L.el.style.transform=`translate(${x}px,${y}px)`;
+  }
+}
+updateCuts();applyCondition();paintCav();paintCanal();showInfo('tm_overview');setView('overview');resize();
+renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera);updateLabels();});
+}
+</script>
+</body>
+</html>
