@@ -652,7 +652,7 @@ function applyCondition(){
     const m=condMesh(new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,roughness:0.95,side:THREE.DoubleSide,depthWrite:false})));m.renderOrder=2;
   }
   if(C==='aom'){ // injected vessels: radial from the annulus and running down the handle
-    const vm=std(0xa8302e,{transparent:true,opacity:0.38,roughness:0.5}),on=(x,y)=>[x,y,condZ(x,y).z+0.04];
+    const vm=std(0x9a1a1e,{transparent:true,opacity:0.5,roughness:0.4}),on=(x,y)=>[x,y,condZ(x,y).z+0.04];
     for(let k=0;k<22;k++){const a0=k/22*Math.PI*2+0.3*rnd(k+3),L=0.2+0.35*rnd(k+40),pts=[];
       for(let t=0;t<=12;t++){const s=0.97-L*t/12,a=a0+0.025*Math.sin(t*0.7+k)+0.012*Math.sin(t*2.1+2*k),dx=Math.cos(a),dy=Math.sin(a),x=U.x+dx*rayLen(dx,dy)*s,y=U.y+dy*rayLen(dx,dy)*s;if(isFlac(x,y)&&t)break;pts.push(on(x,y));}
       if(pts.length>3)condMesh(tube(pts,0.012+0.008*rnd(k+70),vm,24));}
