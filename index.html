@@ -652,11 +652,11 @@ function applyCondition(){
     const m=condMesh(new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,roughness:0.95,side:THREE.DoubleSide,depthWrite:false})));m.renderOrder=2;
   }
   if(C==='aom'){ // injected vessels: radial from the annulus and running down the handle
-    const vm=std(0x9a1a1e,{transparent:true,opacity:0.65,roughness:0.4}),on=(x,y)=>[x,y,condZ(x,y).z+0.04];
+    const vm=std(0xa8302e,{transparent:true,opacity:0.38,roughness:0.5}),on=(x,y)=>[x,y,condZ(x,y).z+0.04];
     for(let k=0;k<22;k++){const a0=k/22*Math.PI*2+0.3*rnd(k+3),L=0.2+0.35*rnd(k+40),pts=[];
       for(let t=0;t<=12;t++){const s=0.97-L*t/12,a=a0+0.025*Math.sin(t*0.7+k)+0.012*Math.sin(t*2.1+2*k),dx=Math.cos(a),dy=Math.sin(a),x=U.x+dx*rayLen(dx,dy)*s,y=U.y+dy*rayLen(dx,dy)*s;if(isFlac(x,y)&&t)break;pts.push(on(x,y));}
-      if(pts.length>3)condMesh(tube(pts,0.016+0.012*rnd(k+70),vm,24));}
-    for(const sd of[-1,1]){const nx=-H.y*sd,ny=H.x*sd,pts=[];for(let t=0;t<=14;t++){const f=t/14,o=0.16+0.02*Math.sin(f*5+sd);pts.push(on(LP.x+(U.x-LP.x)*f+nx*o,LP.y+(U.y-LP.y)*f+ny*o));}condMesh(tube(pts,0.028,vm,40));}
+      if(pts.length>3)condMesh(tube(pts,0.012+0.008*rnd(k+70),vm,24));}
+    for(const sd of[-1,1]){const nx=-H.y*sd,ny=H.x*sd,pts=[];for(let t=0;t<=14;t++){const f=t/14,o=0.16+0.02*Math.sin(f*5+sd);pts.push(on(LP.x+(U.x-LP.x)*f+nx*o,LP.y+(U.y-LP.y)*f+ny*o));}condMesh(tube(pts,0.02,vm,40));}
   }
   if(C==='grommet'){
     const g=new THREE.LatheGeometry([[0.26,-0.42],[0.8,-0.42],[0.8,-0.3],[0.4,-0.24],[0.4,0.22],[0.66,0.26],[0.66,0.36],[0.26,0.36],[0.26,-0.42]].map(([r,h])=>new THREE.Vector2(r,h)),40);
